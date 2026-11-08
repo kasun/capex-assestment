@@ -35,4 +35,4 @@ worker: ## Local q2 worker against the compose redis
 	cd backend && $(DB_ENV) uv run manage.py qcluster
 
 css: ## Rebuild tailwind (tokens/components in frontend/static/css)
-	npx tailwindcss -i frontend/static/css/input.css -o frontend/static/css/tailwind.css --minify
+	npx tailwindcss -i frontend/css/input.css -o frontend/static/css/capex-tailwind.css --minify

@@ -7,6 +7,7 @@ FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    DJANGO_DEBUG=0 \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app

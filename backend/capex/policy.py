@@ -91,7 +91,7 @@ def _compute(user) -> Optional[Entitlements]:
         # Hardened against bad rows: intersect the granted scope with the
         # caller's own org so a corrupted M2M row cannot cross orgs.
         ids = set(
-            m.Property.objects.filter(user__pk=user.pk, org_id=user.org_id).values_list(
+            m.Property.objects.filter(users__pk=user.pk, org_id=user.org_id).values_list(
                 "id", flat=True
             )
         )

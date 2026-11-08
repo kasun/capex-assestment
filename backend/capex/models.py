@@ -204,6 +204,59 @@ class Budget(models.Model):
         return f"{self.property_id} · {self.fiscal_period} · {self.allocated_amount}"
 
 
+class ProjectRollup(models.Model):
+    """Precomputed analytics grain (SPEC §7) — the dashboard never aggregates
+    Project live.
+
+    Written only by capex.rollups (worker): a debounced, org-scoped, full
+    recompute per dirty org inside one transaction (correct-at-rest, ~100ms
+    at big-tenant scale), unique on the grain. Scoping goes through
+    ``property`` like every other tenant row.
+    """
+
+    property = models.ForeignKey(Property, on_delete=models.PROTECT, related_name="project_rollups")
+    fiscal_period = models.CharField(max_length=16, choices=FiscalPeriods.choices)
+    category = models.CharField(max_length=64, choices=Categories.choices)
+
+    project_count = models.PositiveIntegerField(default=0)
+    budget_sum = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    actual_sum = models.DecimalField(max_digits=18, decimal_places=2, default=0)
+    # Projects currently sitting in an approval stage (backlog input).
+    pending_count = models.PositiveIntegerField(default=0)
+    # Projects that reached a terminal decision, with total decision
+    # seconds = the cycle-time numerator; denominator = decided_count.
+    decided_count = models.PositiveIntegerField(default=0)
+    cycle_seconds_sum = models.BigIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["property", "fiscal_period", "category"], name="uniq_rollup_grain"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"rollup {self.property_id} · {self.fiscal_period} · {self.category}"
+
+
+class DashboardStamp(models.Model):
+    """Per-org monotonic version, bumped atomically on every rollup write.
+
+    Carried into cache keys (versioned keys make invalidation implicit) and
+    SSE notifications so UIs can detect staleness cheaply.
+    """
+
+    org = models.OneToOneField(
+        Organization, on_delete=models.CASCADE, related_name="dashboard_stamp"
+    )
+    version = models.BigIntegerField(default=1)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"stamp org {self.org_id} v{self.version}"
+
+
 #: Statuses that count towards the approval backlog KPI (SPEC §7).
 PENDING_STATUSES = (
     Statuses.SUBMITTED,

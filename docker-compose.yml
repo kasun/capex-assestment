@@ -1,0 +1,62 @@
+# Multi-tenant CapEx platform — full stack bring-up:
+#   docker compose up --build   → db + redis + api + q2 worker (+ one-shot init)
+# The app is served at http://localhost:8000 (login admin@org1.example.com /
+# Passw0rd! after seeding).
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: capex
+      POSTGRES_USER: capex
+      POSTGRES_PASSWORD: capex
+    ports:
+      - "15432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U capex"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "16379:6379"
+
+  init:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py load_seed --scale big"
+    environment: &app-env
+      DJANGO_DEBUG: "0"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
+      POSTGRES_HOST: db
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  api:
+    build: .
+    command: gunicorn --bind 0.0.0.0:8000 --workers 2 --worker-class uvicorn.workers.UvicornWorker config.asgi:application
+    ports:
+      - "8000:8000"
+    environment: *app-env
+    depends_on:
+      init:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: python manage.py qcluster
+    environment: *app-env
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+volumes:
+  pgdata:

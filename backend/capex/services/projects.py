@@ -132,6 +132,21 @@ def _require_in_scope(ent, project: m.Project) -> None:
         raise NotFound(f"no project {project.pk} in scope")
 
 
+def _org_of_property(property_id: int) -> int | None:
+    return (
+        m.Property.objects.filter(pk=property_id).values_list("org_id", flat=True).first()
+    )
+
+
+def _mark_dirty(property_id: int) -> None:
+    """Queue the rollup refresh (worker side of SPEC §7), after commit."""
+    from capex import rollups
+
+    org_id = _org_of_property(property_id)
+    if org_id:
+        transaction.on_commit(lambda: rollups.mark_dirty(org_id))
+
+
 def create(ent, *, property_id: int, title: str, category: str, fiscal_period: str,
            budget_amount, actual_cost=None) -> m.Project:
     """Create a draft project on a property the caller may write."""
@@ -167,6 +182,7 @@ def update(ent, project: m.Project, **fields: Any) -> m.Project:
     for name in allowed:
         setattr(project, name, fields[name])
     project.save(update_fields=allowed or None)
+    _mark_dirty(project.property_id)
     return project
 
 
@@ -175,7 +191,9 @@ def delete(ent, project: m.Project) -> None:
     _require_in_scope(ent, project)
     if project.status != m.Statuses.DRAFT:
         raise NotAllowed("only draft projects can be deleted")
+    pid = project.property_id
     project.delete()
+    _mark_dirty(pid)
 
 
 # --- The state machine (one real path end to end; SPEC §6) -------------------
@@ -214,6 +232,5 @@ def apply_transition(ent, project: m.Project, action: str, *, by) -> m.Project:
             by_user=by,
             at=timezone.now(),
         )
-        # TODO(rollups): mark the rollup dirty here (drawn from SPEC §7) —
-        # lands together with the aggregation step.
+        _mark_dirty(project.property_id)
     return project

@@ -125,6 +125,11 @@ frontend/templates/capex/   # page shells + the fragments (partials) the API ser
 designs/           # approved pen.dev mockups + exported previews (UI reference)
 ```
 
+## Tools used
+- pen.dev - Designs
+- OpenCode with GLM-5.3 Flash - Agent Harness
+- Visual Studio Code - IDE
+
 Time-per-area (6h box, as built with the reviewer's step-approvals running):
 stack & schema 0:40 · policy+API 1:10 · state machine 0:35 · aggregation+cache 0:50 ·
 real-time 0:30 · dashboard+UI 0:45 · seeder/docker/first-run 0:35 · tests 0:40 ·

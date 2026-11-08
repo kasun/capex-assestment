@@ -199,38 +199,12 @@ no tenant payload; HTML is assembled inside the viewer-entitled stream.
   workers safe, and the HTTP path stateless — same reasoning defended in
   DDoS-adjacent production design.
 
-## 6. Production DB & deployment (Azure SQL + AKS)
+## 6. Production DB & deployment (Azure SQL)
 
-We developed against Postgres 17 (containerised) — the deltas to the real
-estate are concrete:
+We developed against Postgres 17 (containerised)
 
-* **Migrations** keep working: Django's `django.db.backends.postgresql` →
-  `microsoft/mssql-django` (Azure SQL) backend runs the same `manage.py migrate`
-  flow; Postgres-specific bits in the codebase are isolated: the id-
-  sequence reset after `load_seed` (a Postgres `setval`) becomes an
-  `IDENTITY` reseed equivalent; the rollup `UNIQUE(grain)` constraints and
-  the filtered `Count(...)` aggregations port 1:1.
-* **Connection pooling**: at AKS scale, per-pod pools via `pgbouncer`-style
-  Odyssey (Azure SQL's native pooling) in *transaction mode*; our
-  short-CAS-transaction design (no transaction-across-HTTP) is already
-  pooling-friendly.
-* **Read replicas**: analytics reads (rollup tables + stamp reads) are the
-  natural replica workload — a reader endpoint for `/api/analytics/…` keeps
-  the transactional DB for writes; routing is a settings flip, the code
-  already separates read/write flows at the service layer.
-* **Indexing for the aggregate queries** (the production note): the recompute
-  scans `Project(property_id, fiscal_period, category)` and
-  `ApprovalEvent(property_id)` — both exist (migration file) and are the
-  ones to carry to Azure SQL; adding the partial `WHERE status IN
-  (submitted/manager_review/finance_review)` on `Project(property_id,
-  status)` is the next split if the pending-count query becomes the hot one.
-  Sizing estimate for 5M rows: ~45 bytes/row index → ~250MB × 2 composite
-  — trivially cacheable in RAM.
-* **Secrets/SSO**: production auth = Azure AD JWT → SimpleJWT's
-  authentication class swapped for a MS-validated token class; our policy
-  (DB-resolved entitlements) is untouched by that — a `local` claim-only
-  identity is all the policy needs. **[deferred]** the Azure AD stub; the
-  design is in place (`SimpleJWT` today, MS token class later).
+* **Migrations** keep working: Use environment variables to point to production DB.
+* **Read replicas**: Separate read and write replicas in production.
 
 ## 7. Tradeoffs — the three (plus one) we made
 

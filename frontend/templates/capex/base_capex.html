@@ -52,6 +52,7 @@
       <div><div class="user-name">{{ user.get_full_name|default:user.get_username }}</div>
       <div class="user-mail">{{ user.email }}</div></div>
     </div>
+    <a class="logout-link" href="{% url 'logout' %}">Sign out →</a>
   </aside>
 
   <main class="main">

@@ -85,7 +85,6 @@ body { background:var(--bg); color:var(--text); font:14px/1.5 -apple-system,"Int
 [data-theme="paper"] .badge.b-finance { color:#A05A10; }
 [data-theme="paper"] .badge.b-draft { color:#64748B; background:#EEF1F6; }
 [data-theme="paper"] .page-sub .live { color:#17835F; }
-
 /* --- fragment-layer components (tables/rows/panels used inside pages) --- */
 .main { max-width: 1200px; }
 .page-head { display:flex; align-items:flex-start; justify-content:space-between; }
@@ -162,3 +161,5 @@ tr.approving { opacity:.65; pointer-events:none; }
 .fill { height:100%; border-radius:99px; background:var(--primary); display:block; }
 .fill-ok { background:var(--approved); }
 .fill-over { background:var(--rejected); }
+.logout-link { color:var(--muted); font-size:12px; text-decoration:none; padding:4px 10px; }
+.logout-link:hover { color:var(--text); }

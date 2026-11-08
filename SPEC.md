@@ -64,32 +64,29 @@ the Django project itself.
 
 ## 4. Data model
 
-All ids are integers to match the harness JSON; `org_id`/`property_id` are **denormalized
-onto project rows** (and approval events) so no join is *ever* needed to scope them — cheap
-index scans, and the rollup/invalidation path never trusts a join to be correct.
+All ids are integers to match the harness JSON. **Tenant column**: rows reach their org
+through `property` (User carries `org` directly — it cannot be derived from a property
+grant). Scoping filters are `property_id ∈ caller's grant` or `property__org = caller's
+org`: one indexed FK hop, never more. Uniqueness is per-tenant, not global.
 
 ```
 Organization(id, name, slug)
-Property(id, org FK, name, code)
+Property(id, org FK, name, code)   UNIQUE (org, name) · UNIQUE (org, code)
 User(AbstractUser)(email UNIQUE, org FK, role ∈ {org_admin, property_manager, approver, viewer},
                   property_scope m2m → Property)          # org_admin ⇒ scope = whole org, resolved
-Project(id, org_id, property_id FK, title, category, fiscal_period, budget_amount,
-        actual_cost, status, current_level, version int, submitted_by FK→User,
-        created_at/updated_at)
-ApprovalEvent(id, project FK, org_id, property_id, level, to_status, by_user, at)
+Project(id, property FK, title, category (+ "Other"), fiscal_period,
+        budget_amount, actual_cost, status, submitted_by FK→User,
+        created_at/updated_at)     # version (CAS) joins with §6's concurrency step
+ApprovalEvent(id, project FK, property, level, to_status, by_user, at)
    # append-only; the seeder's history is loaded into these — cycle time is computed here
-Budget(id, org FK, property FK, fiscal_period, allocated_amount, UNIQUE(property, fiscal_period))
-ProjectRollup(id, org_id, property_id, fiscal_period, category,
-              project_count, budget_sum, actual_sum,
-              status_last_count, status_pending_count,      # submitted/manager/finance_review
-              cycle_time_seconds_sum, decided_count)        # approval throughput inputs
-   # grain: (org, property, fiscal_period, category); UNIQUE on the grain
-DashboardStamp(org_id PK, updated_at, version)              # for cache/JS freshness signals
+Budget(id, property FK, fiscal_period, allocated_amount, UNIQUE(property, fiscal_period))
+# deferred to the rollup step: ProjectRollup (grain property × fiscal_period × category,
+# UNIQUE on grain) and DashboardStamp (per-org version for SSE/cache freshness)
 ```
 
-Indexes (the DESIGN.md §6 index note): `Project(org_id, property_id)`, `Project(org_id,
-property_id, fiscal_period, category)`, `Project(org_id, status)` partial on pending + the
-rollup UNIQUE grain. Fiscal periods: `FY2024..FY2026` (harness constants).
+Indexes: `Project(property_id)`, `Project(property_id, fiscal_period, category)`,
+`Project(property_id, status)`, `ApprovalEvent(project, at)`, and (later) the rollup's
+UNIQUE grain. Fiscal periods: `FY2024..FY2026` (harness constants).
 
 **Auth**: one `User` table serves both session (HTMX UI) and JWT (API). Passwords from the
 harness (plaintext) are hashed at load time with Django's hasher. Seeded password
@@ -148,11 +145,10 @@ Layered enforcement, in order:
 
 - **No skipping/out-of-turn**: enforced by the table — an action not in the table returns
   **422** with reason "transition not allowed at current level".
-- **Concurrency**: `Project(version)` + `UPDATE ... WHERE version = $1` (compare-and-swap
-  on F expressions). Two approvers acting at once: first writer wins, second gets **409**
-  with the fresh state → the UI reconciles. Choice of CAS over `select_for_update`
-  defended in DESIGN.md (no transaction-held-during-HTTP; plays well with q2 workers
-  reading the same rows).
+- **Concurrency**: a `Project.version` compare-and-swap (`UPDATE ... WHERE version = $1`,
+  409 with the fresh state on loss → the UI reconciles). The `version` field itself lands
+  with this step's commit (one-line migration); CAS over `select_for_update` is defended in
+  DESIGN.md (no transaction-held-during-HTTP; plays well with q2 workers).
 - **Approving own submission**: a user cannot approve a level on a project they submitted
   past the level at which their role is allowed — enforced by comparing `submitted_by` at
   the transition table check. One real workflow path is all the assignment demands; we

@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "django_q",
     # Local
-    # "capex",  # ← lands with the framework commit
+    "capex",
 ]
 
 MIDDLEWARE = [
@@ -102,7 +102,7 @@ Q_CLUSTER = {  # django-q2: broker = Redis, scheduler in the same qcluster proce
     "name": "capex",
     "workers": int(os.environ.get("Q_WORKERS", "2")),
     "timeout": 300,
-    "retry": 10,
+    "retry": 360,  # must exceed timeout or django-q2 re-runs running jobs
     "catch_up": False,  # don't stampede scheduled catch-ups on worker startup
     "redis": {"host": _REDIS_HOST, "port": _REDIS_PORT, "db": REDIS_DB_NUM},
 }
@@ -110,6 +110,8 @@ Q_CLUSTER = {  # django-q2: broker = Redis, scheduler in the same qcluster proce
 # --- Auth ------------------------------------------------------------------
 
 AUTH_PASSWORD_VALIDATORS = []  # seeded demo passwords don't pass policy checks
+
+AUTH_USER_MODEL = "capex.User"
 
 LOGIN_URL = "/accounts/login/"
 LOGIN_REDIRECT_URL = "/"

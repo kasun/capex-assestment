@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# Django
+db.sqlite3
+staticfiles/
+!staticfiles/.gitkeep
+media/
+
+# Node (Tailwind build tooling)
+node_modules/
+
+# Built CSS
+frontend/static/css/tailwind.css
+
+# Assignment source (never committed, never shipped)
+instructions/
+seed_data/
+
+# Misc
+.DS_Store
+.env
+*.log
+
+# Agents
+opencode.jsonc

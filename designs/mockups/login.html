@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="capex.css">
+<style>
+  body { display:grid; place-items:center; min-height:100vh; }
+  .card { width:380px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:32px; display:flex; flex-direction:column; gap:16px; }
+  .title { font-size:19px; font-weight:700; letter-spacing:-0.02em; }
+  .sub { color:var(--muted); font-size:12.5px; margin-top:-10px; }
+  label { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:600; }
+  input { background:#0D1526; border:1px solid var(--border); border-radius:9px; padding:11px 13px; color:var(--text); font-size:14px; width:100%; }
+  input:focus { outline:1px solid var(--primary); }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .hint { color:var(--muted); font-size:11.5px; background:#0D1526; border:1px dashed var(--border); border-radius:8px; padding:9px 12px; }
+  button { background:var(--primary); border:none; border-radius:9px; padding:11px; color:#fff; font-weight:700; font-size:14px; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="brand"><div class="brand-mark">C</div><div><div class="brand-name">CapEx</div><div class="brand-sub">Harborpoint Group</div></div></div>
+    <div class="title">Sign in</div>
+    <div class="sub">Single-tenant workspace · JWT + session, same policy layer</div>
+    <div class="field"><label>Email</label><input value="pm2@harborpoint.example"></div>
+    <div class="field"><label>Password</label><input type="password" value="••••••••••"></div>
+    <button>Sign in</button>
+    <div class="hint">Seeded demo users all use <span class="mono">Passw0rd!</span> — roles: org_admin / property_manager / approver / viewer</div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --bg:#0B1220; --surface:#111A2A; --surface-2:#15203520; --border:#21304B;
+    --text:#E8EEFA; --text-2:#B7C6E4; --muted:#8CA3C7;
+    --primary:#3D7DF0; --primary-soft:#16294F;
+    --approved:#27C6A2; --approved-soft:#103A33;
+    --pending:#F5B43C; --pending-soft:#3A2F10;
+    --rejected:#EF5350; --rejected-soft:#3A1514;
+    --draft:#7E93B8;
+    --pos:#27C6A2; --neg:#EF5350;
+    --track:#1B2842; --bar-budget:#27426E; --bar-actual:#3D7DF0;
+  }
+  /* ---- alternative themes, selected via ?theme=lightblue | ?theme=mono ---- */
+  [data-theme="lightblue"] {
+    --bg:#EFF4FB; --surface:#FFFFFF; --border:#D9E3F2; --text:#152238; --text-2:#3E5576; --muted:#8CA0BE;
+    --primary:#2563C9; --primary-soft:#E4EEFC;
+    --approved:#1D9E7F; --approved-soft:#E1F5EE; --pos:#1D9E7F;
+    --pending:#B97817; --pending-soft:#FBF0DC;
+    --rejected:#D64545; --rejected-soft:#FBE8E8; --neg:#D64545;
+    --draft:#5E7191; --track:#E3EAF5; --bar-budget:#B9CCE8; --bar-actual:#2563C9;
+  }
+  [data-theme="lightblue"] .b-submitted { color:#2563C9; }
+  [data-theme="lightblue"] .b-finance { color:#B4560F; }
+  [data-theme="lightblue"] .b-draft { color:#5E7191; background:#EDF1F8; }
+
+  /* paper: the light companion to navy dark — neutral chrome, blue = interactive only */
+  [data-theme="paper"] {
+    --bg:#F5F7FB; --surface:#FFFFFF; --border:#E2E8F1; --text:#1B2434; --text-2:#46586F; --muted:#8996AB;
+    --primary:#2A63C9; --primary-soft:#EAF0FA;
+    --approved:#17835F; --approved-soft:#E2F4EC; --pos:#17835F;
+    --pending:#A66B14; --pending-soft:#FBF1DC;
+    --rejected:#C93E3E; --rejected-soft:#FBE9E9; --neg:#C93E3E;
+    --draft:#64748B; --track:#E7ECF3; --bar-budget:#C6D2E4; --bar-actual:#2A63C9;
+    --active-fg:#22406E;
+  }
+  [data-theme="paper"] .b-submitted { color:#2A63C9; }
+  [data-theme="paper"] .b-finance { color:#A05A10; }
+  [data-theme="paper"] .b-draft { color:#64748B; background:#EEF1F6; }
+  [data-theme="paper"] .page-sub .live { color:#17835F; }
+
+  [data-theme="mono"] {
+    --bg:#0A0A0A; --surface:#141414; --border:#262626; --text:#F2F2F2; --text-2:#CFCFCF; --muted:#8F8F8F;
+    --primary:#EDEDED; --primary-soft:#1F1F1F;
+    --approved:#22B573; --approved-soft:#1B2A20; --pos:#22B573;
+    --pending:#E9B33B; --pending-soft:#2E2614;
+    --rejected:#E5484D; --rejected-soft:#33191A; --neg:#E5484D;
+    --draft:#9E9E9E; --track:#242424; --bar-budget:#3A3A3A; --bar-actual:#EDEDED;
+  }
+  [data-theme="mono"] .btn-primary { background:#EDEDED; border-color:#EDEDED; color:#111; }
+  [data-theme="mono"] .b-submitted { color:#EDEDED; background:#1F1F1F; }
+  [data-theme="mono"] .b-finance { color:#D98A2B; background:#2E2614; }
+  [data-theme="mono"] .b-draft { color:#9E9E9E; background:#1F1F1F; }
+  [data-theme="mono"] .brand-mark { background:#EDEDED; color:#111; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:var(--bg); color:var(--text); font:14px/1.5 -apple-system,"Inter",sans-serif; }
+  .mono { font-family:ui-monospace,"Geist Mono",monospace; }
+  .shell { display:flex; min-height:100vh; }
+
+  /* ------ sidebar ------ */
+  .sidebar { width:236px; background:var(--surface); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:24px; }
+  .brand { display:flex; align-items:center; gap:10px; padding:4px 8px; }
+  .brand-mark { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#2F63C9,#3D7DF0); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+  .brand-name { font-weight:700; font-size:16px; letter-spacing:-0.01em; }
+  .brand-sub { font-size:10.5px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
+  .nav { display:flex; flex-direction:column; gap:2px; }
+  .nav a { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:var(--text-2); text-decoration:none; font-weight:500; font-size:13.5px; }
+  .nav a.active { background:var(--primary-soft); color:var(--active-fg, #fff); }
+  .nav a.active .nav-ico { color:var(--primary); }
+  .nav-ico { width:16px; text-align:center; opacity:.85; font-size:13px; }
+  .scope { margin-top:auto; border:1px solid var(--border); background:var(--surface-2); border-radius:10px; padding:10px 12px; }
+  .scope-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+  .scope-value { font-size:12.5px; color:var(--text-2); line-height:1.45; }
+  .scope-value b { color:var(--text); font-weight:600; }
+  .user { display:flex; align-items:center; gap:10px; padding:8px; }
+  .avatar { width:32px; height:32px; border-radius:50%; background:#274275; color:#BFE0FF; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; }
+  .user-name { font-size:13px; font-weight:600; }
+  .user-mail { font-size:11px; color:var(--muted); }
+
+  /* ------ main ------ */
+  .main { flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:20px; max-width:1200px; }
+  .page-head { display:flex; align-items:flex-start; justify-content:space-between; }
+  .page-title { font-size:22px; font-weight:700; letter-spacing:-0.02em; }
+  .page-sub { color:var(--muted); font-size:12.5px; margin-top:3px; }
+  .page-sub .live { color:var(--approved); }
+  .head-actions { display:flex; gap:10px; }
+  .btn { border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--surface); color:var(--text-2); }
+  .btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+
+  .kpi-row { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .kpi { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 18px; }
+  .kpi-label { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; display:flex; justify-content:space-between; }
+  .kpi-value { font-family:ui-monospace,"Geist Mono",monospace; font-size:26px; font-weight:700; letter-spacing:-0.01em; margin-top:8px; }
+  .kpi-meta { margin-top:6px; font-size:12px; }
+  .chip { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:2px 9px; font-weight:600; font-size:11px; }
+  .chip-pos { color:var(--pos); background:var(--approved-soft); }
+  .chip-neg { color:var(--neg); background:var(--rejected-soft); }
+  .chip-warn { color:var(--pending); background:var(--pending-soft); }
+
+  .panels { display:grid; grid-template-columns:1fr 340px; gap:14px; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+  .panel-title { font-size:14.5px; font-weight:700; }
+  .legend { display:flex; gap:14px; font-size:11.5px; color:var(--text-2); }
+  .legend i { display:inline-block; width:10px; height:10px; border-radius:3px; margin-right:5px; vertical-align:-1px; }
+  .legend .i-budget i { background:var(--bar-budget); }
+  .legend .i-actual i { background:var(--bar-actual); }
+
+  .bars { display:flex; align-items:flex-end; gap:26px; height:190px; padding:0 6px; }
+  .bars .cat { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; height:100%; justify-content:flex-end; }
+  .pair { display:flex; align-items:flex-end; gap:4px; width:100%; justify-content:center; }
+  .pbar { width:16px; border-radius:5px 5px 2px 2px; }
+  .p-budget { background:var(--bar-budget); }
+  .p-actual { background:var(--bar-actual); }
+  .p-over { background:var(--rejected); }
+  .cat-label { font-size:10.5px; color:var(--muted); margin-top:2px; }
+
+  .spend { display:flex; flex-direction:column; gap:13px; }
+  .spend-row .top { display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:5px; }
+  .spend-row .top .amt { font-family:ui-monospace,"Geist Mono",monospace; color:var(--text-2); }
+  .spend-row .top .pct { margin-left:8px; }
+  .track { height:7px; border-radius:99px; background:var(--track); overflow:hidden; }
+  .fill { height:100%; border-radius:99px; background:var(--bar-actual); }
+  .fill-ok { background:var(--approved); }
+  .fill-over { background:var(--rejected); }
+
+  .table { width:100%; border-collapse:collapse; }
+  .table th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600; padding:8px 12px; border-bottom:1px solid var(--border); }
+  .table td { padding:11px 12px; border-bottom:1px solid #182540; font-size:13px; }
+  .table tr:last-child td { border-bottom:none; }
+  .badge { display:inline-block; border-radius:6px; padding:3px 9px; font-size:11px; font-weight:600; }
+  .b-submitted { color:#7FB2FF; background:var(--primary-soft); }
+  .b-manager { color:var(--pending); background:var(--pending-soft); }
+  .b-finance { color:#F79A3C; background:#3A2410; }
+  .b-approved { color:var(--approved); background:var(--approved-soft); }
+  .b-rejected { color:var(--rejected); background:var(--rejected-soft); }
+  .b-draft { color:var(--draft); background:#182238; }
+  .row-actions { display:flex; gap:8px; justify-content:flex-end; }
+  .btn-sm { border-radius:7px; padding:5px 11px; font-size:12px; font-weight:600; }
+  .btn-ok { background:var(--approved); color:#05221B; border:none; }
+  .btn-reject { background:transparent; border:1px solid var(--border); color:var(--rejected); }
+  .amt-pos { color:var(--pos); } .amt-neg { color:var(--neg); }
+</style>
+</head>
+<body>
+<script>const t = new URLSearchParams(location.search).get("theme"); if (t) document.documentElement.dataset.theme = t;</script>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div><div class="brand-name">CapEx</div><div class="brand-sub">Harborpoint Group</div></div>
+    </div>
+    <nav class="nav">
+      <a class="active"><span class="nav-ico">▦</span> Dashboard</a>
+      <a><span class="nav-ico">▤</span> Projects</a>
+      <a><span class="nav-ico">✓</span> Approvals</a>
+      <a><span class="nav-ico">⌂</span> Properties</a>
+    </nav>
+    <div class="scope">
+      <div class="scope-label">Access scope</div>
+      <div class="scope-value"><b>Whole org</b><br>12 properties</div>
+    </div>
+    <div class="user">
+      <div class="avatar">AK</div>
+      <div><div class="user-name">Alex Kern</div><div class="user-mail">admin@harborpoint.example</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Dashboard</div>
+        <div class="page-sub">FY2026 · Harborpoint Hospitality Group · <span class="live">● live · updated just now</span></div>
+      </div>
+      <div class="head-actions">
+        <button class="btn">FY2026 ▾</button>
+        <button class="btn-primary">+ New project</button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi">
+        <div class="kpi-label">Budget <span class="chip chip-pos">FY2026</span></div>
+        <div class="kpi-value">$8.40M</div>
+        <div class="kpi-meta"><span style="color:var(--muted)">allocation across 12 properties</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Actuals</div>
+        <div class="kpi-value">$7.12M</div>
+        <div class="kpi-meta"><span style="color:var(--muted)">84.8% of budget committed</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Variance</div>
+        <div class="kpi-value"><span class="amt-neg">+$284K</span></div>
+        <div class="kpi-meta"><span class="chip chip-neg">↑ 3.2% over</span> <span style="color:var(--muted)"> vs plan</span></div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-label">Approval backlog</div>
+        <div class="kpi-value">47</div>
+        <div class="kpi-meta"><span class="chip chip-warn">avg cycle 3.2 days</span></div>
+      </div>
+    </div>
+
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">Budget vs actuals by category</div>
+          <div class="legend"><span class="i-budget"><i></i>Budget</span><span class="i-actual"><i></i>Actuals</span><span class="i-actual" style="color:var(--neg)"><i style="background:var(--rejected)"></i>Over budget</span></div>
+        </div>
+        <div class="bars">
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:88px"></div><div class="pbar p-actual" style="height:64px"></div></div><div class="cat-label">HVAC</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:120px"></div><div class="pbar p-over" style="height:136px"></div></div><div class="cat-label">Roofing</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:76px"></div><div class="pbar p-actual" style="height:48px"></div></div><div class="cat-label">Electrical</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:150px"></div><div class="pbar p-actual" style="height:127px"></div></div><div class="cat-label">Plumbing</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:62px"></div><div class="pbar p-actual" style="height:38px"></div></div><div class="cat-label">IT / Network</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:104px"></div><div class="pbar p-actual" style="height:96px"></div></div><div class="cat-label">FF&amp;E</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:126px"></div><div class="pbar p-over" style="height:151px"></div></div><div class="cat-label">Elevators</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:52px"></div><div class="pbar p-actual" style="height:29px"></div></div><div class="cat-label">Life Safety</div></div>
+          <div class="cat"><div class="pair"><div class="pbar p-budget" style="height:98px"></div><div class="pbar p-actual" style="height:92px"></div></div><div class="cat-label">Renovation</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div class="panel-title">Spend utilization</div><span style="font-size:11.5px;color:var(--muted)">share of category budget</span></div>
+        <div class="spend">
+          <div class="spend-row"><div class="top"><span>Roofing <span class="chip chip-neg" style="margin-left:6px">Over</span></span><span class="amt">113%</span></div><div class="track"><div class="fill fill-over" style="width:113%"></div></div></div>
+          <div class="spend-row"><div class="top"><span>Elevators <span class="chip chip-neg" style="margin-left:6px">Over</span></span><span class="amt">107%</span></div><div class="track"><div class="fill fill-over" style="width:107%"></div></div></div>
+          <div class="spend-row"><div class="top"><span>FF&amp;E</span><span class="amt">92%</span></div><div class="track"><div class="fill" style="width:92%"></div></div></div>
+          <div class="spend-row"><div class="top"><span>Renovation</span><span class="amt">94%</span></div><div class="track"><div class="fill" style="width:94%"></div></div></div>
+          <div class="spend-row"><div class="top"><span>Plumbing</span><span class="amt">85%</span></div><div class="track"><div class="fill fill-ok" style="width:85%"></div></div></div>
+          <div class="spend-row"><div class="top"><span>HVAC</span><span class="amt">73%</span></div><div class="track"><div class="fill fill-ok" style="width:73%"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">Pending approvals</div>
+        <a style="font-size:12.5px;color:var(--primary);text-decoration:none" href="#">View all 47 →</a>
+      </div>
+      <table class="table">
+        <tr><th>Project</th><th>Property</th><th>Category</th><th style="text-align:right">Budget</th><th style="text-align:right">Actuals</th><th style="text-align:right">Variance</th><th>Status</th><th style="text-align:right">Action</th></tr>
+        <tr>
+          <td style="font-weight:600">Roof replacement — Building 3</td><td style="color:var(--text-2)">Harbor Hotel</td><td style="color:var(--text-2)">Roofing</td>
+          <td class="mono" style="text-align:right">$120,000</td><td class="mono" style="text-align:right">$41,880</td><td class="amt-pos mono" style="text-align:right">−65%*</td>
+          <td><span class="badge b-manager">Manager review</span></td>
+          <td><div class="row-actions"><button class="btn-sm btn-ok">Approve</button><button class="btn-sm btn-reject">Reject</button></div></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Elevator retrofit — Tower A</td><td style="color:var(--text-2)">Grand Resort</td><td style="color:var(--text-2)">Elevators</td>
+          <td class="mono" style="text-align:right">$96,500</td><td class="mono" style="text-align:right">$103,245</td><td class="amt-neg mono" style="text-align:right">+7%</td>
+          <td><span class="badge b-manager">Manager review</span></td>
+          <td><div class="row-actions"><button class="btn-sm btn-ok">Approve</button><button class="btn-sm btn-reject">Reject</button></div></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">HVAC unit — West Wing</td><td style="color:var(--text-2)">City Office</td><td style="color:var(--text-2)">HVAC</td>
+          <td class="mono" style="text-align:right">$210,000</td><td class="mono" style="text-align:right">$189,000</td><td class="amt-pos mono" style="text-align:right">−10%</td>
+          <td><span class="badge b-finance">Finance review</span></td>
+          <td><div class="row-actions"><button class="btn-sm btn-ok">Approve</button><button class="btn-sm btn-reject">Reject</button></div></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Life-safety sprinkler loop</td><td style="color:var(--text-2)">Harbor Hotel</td><td style="color:var(--text-2)">Life Safety</td>
+          <td class="mono" style="text-align:right">$54,000</td><td class="mono" style="text-align:right">$18,360</td><td class="amt-pos mono" style="text-align:right">−66%*</td>
+          <td><span class="badge b-submitted">Submitted</span></td>
+          <td><div class="row-actions" style="color:var(--muted);font-size:12px">awaiting manager</div></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">FF&amp;E refresh — suites 8–14</td><td style="color:var(--text-2)">Grand Resort</td><td style="color:var(--text-2)">Furniture / FF&amp;E</td>
+          <td class="mono" style="text-align:right">$88,200</td><td class="mono" style="text-align:right">$61,740</td><td class="amt-pos mono" style="text-align:right">−30%</td>
+          <td><span class="badge b-finance">Finance review</span></td>
+          <td><div class="row-actions"><button class="btn-sm btn-ok">Approve</button><button class="btn-sm btn-reject">Reject</button></div></td>
+        </tr>
+      </table>
+    </div>
+  </main>
+</div>
+</body>
+</html>

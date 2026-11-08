@@ -1,0 +1,87 @@
+/* CapEx mockup shared tokens + components (dark, navy-slate operational) */
+:root {
+  --bg:#0B1220; --surface:#111A2A; --border:#21304B; --border-soft:#182540;
+  --text:#E8EEFA; --text-2:#B7C6E4; --muted:#8CA3C7;
+  --primary:#3D7DF0; --primary-soft:#16294F;
+  --approved:#27C6A2; --approved-soft:#103A33;
+  --pending:#F5B43C; --pending-soft:#3A2F10;
+  --rejected:#EF5350; --rejected-soft:#3A1514;
+  --draft:#7E93B8;
+  --pos:#27C6A2; --neg:#EF5350;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:var(--bg); color:var(--text); font:14px/1.5 -apple-system,"Inter",sans-serif; }
+.mono { font-family:ui-monospace,"Geist Mono",monospace; }
+.shell { display:flex; min-height:100vh; }
+
+.sidebar { width:236px; background:var(--surface); border-right:1px solid var(--border); padding:20px 14px; display:flex; flex-direction:column; gap:24px; }
+.brand { display:flex; align-items:center; gap:10px; padding:4px 8px; }
+.brand-mark { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,#2F63C9,#3D7DF0); display:flex; align-items:center; justify-content:center; font-weight:800; color:#fff; font-size:15px; }
+.brand-name { font-weight:700; font-size:16px; letter-spacing:-0.01em; }
+.brand-sub { font-size:10.5px; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
+.nav { display:flex; flex-direction:column; gap:2px; }
+.nav a { display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:8px; color:var(--text-2); text-decoration:none; font-weight:500; font-size:13.5px; }
+.nav a.active { background:var(--primary-soft); color:var(--active-fg, #fff); }
+.nav a.active .nav-ico { color:var(--primary); }
+.nav-ico { width:16px; text-align:center; opacity:.85; font-size:13px; }
+.scope { margin-top:auto; border:1px solid var(--border); background:var(--surface-2,#15203520); border-radius:10px; padding:10px 12px; }
+.scope-label { font-size:10.5px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; }
+.scope-value { font-size:12.5px; color:var(--text-2); line-height:1.45; }
+.scope-value b { color:var(--text); font-weight:600; }
+.user { display:flex; align-items:center; gap:10px; padding:8px; }
+.avatar { width:32px; height:32px; border-radius:50%; background:#274275; color:#BFE0FF; display:flex; align-items:center; justify-content:center; font-size:11.5px; font-weight:700; }
+.user-name { font-size:13px; font-weight:600; }
+.user-mail { font-size:11px; color:var(--muted); font-size:11px; }
+
+.main { flex:1; padding:28px 32px; display:flex; flex-direction:column; gap:20px; max-width:1200px; }
+.page-head { display:flex; align-items:flex-start; justify-content:space-between; }
+.page-title { font-size:22px; font-weight:700; letter-spacing:-0.02em; }
+.page-sub { color:var(--muted); font-size:12.5px; margin-top:3px; }
+.page-sub .live { color:var(--approved); }
+.head-actions { display:flex; gap:10px; }
+.btn { border-radius:9px; padding:9px 14px; font-size:13px; font-weight:600; border:1px solid var(--border); background:var(--surface); color:var(--text-2); }
+.btn-primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+.btn-sm { border-radius:7px; padding:5px 11px; font-size:12px; font-weight:600; }
+.btn-ok { background:var(--approved); color:#05221B; border:none; }
+.btn-reject { background:transparent; border:1px solid var(--border); color:var(--rejected); }
+
+.panel { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+.panel-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.panel-title { font-size:14.5px; font-weight:700; }
+
+.table { width:100%; border-collapse:collapse; }
+.table th { text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); font-weight:600; padding:8px 12px; border-bottom:1px solid var(--border); }
+.table td { padding:11px 12px; border-bottom:1px solid var(--border-soft); font-size:13px; }
+.table tr:last-child td { border-bottom:none; }
+.amt-pos { color:var(--pos); } .amt-neg { color:var(--neg); }
+
+.badge { display:inline-block; border-radius:6px; padding:3px 9px; font-size:11px; font-weight:600; }
+.b-submitted { color:#7FB2FF; background:var(--primary-soft); }
+.b-manager { color:var(--pending); background:var(--pending-soft); }
+.b-finance { color:#F79A3C; background:#3A2410; }
+.b-approved { color:var(--approved); background:var(--approved-soft); }
+.b-rejected { color:var(--rejected); background:var(--rejected-soft); }
+.b-draft { color:var(--draft); background:#182238; }
+.chip { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:2px 9px; font-weight:600; font-size:11px; }
+.chip-pos { color:var(--pos); background:var(--approved-soft); }
+.chip-neg { color:var(--neg); background:var(--rejected-soft); }
+.chip-warn { color:var(--pending); background:var(--pending-soft); }
+.chip-info { color:#7FB2FF; background:var(--primary-soft); }
+.filter-chip { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border); border-radius:8px; padding:5px 10px; font-size:12px; color:var(--text-2); background:var(--surface); }
+.filter-chip.on { border-color:var(--primary); color:#fff; background:var(--primary-soft); }
+.row-actions { display:flex; gap:8px; justify-content:flex-end; }
+
+/* paper: neutral light companion; blue reserved for interactive affordances */
+[data-theme="paper"] {
+  --bg:#F5F7FB; --surface:#FFFFFF; --border:#E2E8F1; --border-soft:#EEF1F6; --text:#1B2434; --text-2:#46586F; --muted:#8996AB;
+  --primary:#2A63C9; --primary-soft:#EAF0FA;
+  --approved:#17835F; --approved-soft:#E2F4EC; --pos:#17835F;
+  --pending:#A66B14; --pending-soft:#FBF1DC;
+  --rejected:#C93E3E; --rejected-soft:#FBE9E9; --neg:#C93E3E;
+  --draft:#64748B;
+  --active-fg:#22406E;
+}
+[data-theme="paper"] .badge.b-submitted { color:#2A63C9; }
+[data-theme="paper"] .badge.b-finance { color:#A05A10; }
+[data-theme="paper"] .badge.b-draft { color:#64748B; background:#EEF1F6; }
+[data-theme="paper"] .page-sub .live { color:#17835F; }

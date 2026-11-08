@@ -1,0 +1,142 @@
+{# App shell sidebar — the Bluefin mockup's dark forest rail.                    #}
+{# Active item = current URL; nav gains items only when their pages are real.   #}
+<aside
+  class="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-5 self-start rounded-card bg-fin-inverse p-5 md:flex"
+>
+  <a href="/" class="flex items-center gap-2.5" aria-label="home">
+    <span class="flex size-8 items-center justify-center rounded-lg bg-fin-nav-active">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="size-4 text-[#e8f3eb]"
+        aria-hidden="true"
+      >
+        <path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+        <path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+        <path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2 2.6 0 2.4 2 5 2 2.5 0 2.5-2 5-2 1.3 0 1.9.5 2.5 1" />
+      </svg>
+    </span>
+    <span class="font-head text-lg font-semibold text-white">bluefin</span>
+  </a>
+
+  <nav class="flex flex-col gap-1" aria-label="Main">
+    <a
+      href="/"
+      {% if request.resolver_match.url_name == "home" %}
+        aria-current="page"
+        class="flex items-center gap-3 rounded-xl bg-fin-nav-active px-3 py-2 text-sm font-medium text-white"
+      {% else %}
+        class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#b9cdbd] hover:bg-white/5"
+      {% endif %}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="size-4 {% if request.resolver_match.url_name == "home" %}text-white{% else %}text-[#9fbca9]{% endif %}"
+        aria-hidden="true"
+      >
+        <rect width="7" height="9" x="3" y="3" rx="1" />
+        <rect width="7" height="5" x="14" y="3" rx="1" />
+        <rect width="7" height="9" x="14" y="12" rx="1" />
+        <rect width="7" height="5" x="3" y="16" rx="1" />
+      </svg>
+      Overview
+    </a>
+
+    <a
+      href="/admin/"
+      class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#b9cdbd] hover:bg-white/5"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        class="size-4 text-[#9fbca9]"
+        aria-hidden="true"
+      >
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      Admin
+    </a>
+  </nav>
+
+  <div class="flex-1"></div>
+
+  <button
+    type="button"
+    x-data="{ dark: document.documentElement.dataset.theme === 'dark' }"
+    @click="
+      dark = !dark;
+      const next = dark ? 'dark' : 'light';
+      document.documentElement.dataset.theme = next;
+      htmx.ajax('POST', '{% url 'set-theme' %}', { values: { theme: next }, swap: 'none' });
+    "
+    class="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-[#b9cdbd] hover:bg-white/5"
+  >
+    <svg
+      x-show="!dark"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-4 text-[#9fbca9]"
+      aria-hidden="true"
+    >
+      <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+    </svg>
+    <svg
+      x-show="dark"
+      x-cloak
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      class="size-4 text-[#9fbca9]"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2" />
+      <path d="M12 20v2" />
+      <path d="m4.93 4.93 1.41 1.41" />
+      <path d="m17.66 17.66 1.41 1.41" />
+      <path d="M2 12h2" />
+      <path d="M20 12h2" />
+      <path d="m6.34 17.66-1.41 1.41" />
+      <path d="m19.07 4.93-1.41 1.41" />
+    </svg>
+    <span x-text="dark ? 'Light mode' : 'Dark mode'">Dark mode</span>
+  </button>
+
+  <div class="flex items-center gap-2.5 border-t border-white/10 pt-4">
+    <span class="flex size-9 items-center justify-center rounded-full bg-fin-nav-active font-mono text-xs font-semibold text-[#e8f3eb]">
+      {% if request.user.is_authenticated %}{{ request.user.get_username|first|upper }}{% else %}DU{% endif %}
+    </span>
+    <span class="flex flex-col gap-0.5">
+      <span class="text-sm font-medium text-white">
+        {% if request.user.is_authenticated %}{{ request.user.get_username }}{% else %}Demo User{% endif %}
+      </span>
+      <span class="font-mono text-[0.6875rem] text-[#9fbca9]">demo@bluefin.io</span>
+    </span>
+  </div>
+</aside>

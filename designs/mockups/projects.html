@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="capex.css">
+<style>
+  .filters { display:flex; gap:8px; align-items:center; }
+  .pbar-mini { width:120px; height:6px; border-radius:99px; background:#1B2842; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:6px; }
+  .pbar-mini i { display:block; height:100%; background:var(--primary); }
+  .pbar-mini.over i { background:var(--rejected); }
+  tr.conflict td { background:#2A1C0E; box-shadow:inset 0 0 0 1px var(--pending); }
+  .conflict-note { color:var(--pending); font-size:12px; font-weight:600; }
+  tr.approving { opacity:.65; pointer-events:none; }
+  .spin { display:inline-block; width:12px; height:12px; border:2px solid var(--approved); border-top-color:transparent; border-radius:50%; animation:r .8s linear infinite; vertical-align:-2px; margin-right:6px; }
+  @keyframes r { to { transform:rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand"><div class="brand-mark">C</div><div><div class="brand-name">CapEx</div><div class="brand-sub">Harborpoint Group</div></div></div>
+    <nav class="nav">
+      <a><span class="nav-ico">▦</span> Dashboard</a>
+      <a class="active"><span class="nav-ico">▤</span> Projects</a>
+      <a><span class="nav-ico">✓</span> Approvals</a>
+      <a><span class="nav-ico">⌂</span> Properties</a>
+    </nav>
+    <div class="scope"><div class="scope-label">Access scope</div><div class="scope-value"><b>3 properties</b><br>of 12 in org</div></div>
+    <div class="user"><div class="avatar">MJ</div><div><div class="user-name">Mia Jans</div><div class="user-mail">pm2@harborpoint.example</div></div></div>
+  </aside>
+
+  <main class="main">
+    <div class="page-head">
+      <div>
+        <div class="page-title">Projects</div>
+        <div class="page-sub">Scope: Harbor Hotel, Grand Resort, City Office · <span class="live">● live</span></div>
+      </div>
+      <div class="head-actions"><button class="btn">FY2026 ▾</button><button class="btn-primary">+ New project</button></div>
+    </div>
+
+    <div class="filters">
+      <span class="filter-chip">Property: All my properties ▾</span>
+      <span class="filter-chip on">Status: All ▾</span>
+      <span class="filter-chip">Category ▾</span>
+      <span style="flex:1"></span><input style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:12.5px;width:200px" placeholder="Search projects…">
+    </div>
+
+    <div class="panel" style="padding-top:8px">
+      <table class="table" style="padding:0">
+        <tr><th>Project</th><th>Property</th><th>Category</th><th style="text-align:right">Budget</th><th style="text-align:right">Actuals</th><th style="text-align:right">Variance</th><th>Status</th><th style="text-align:right">Action</th></tr>
+
+        <tr><td style="font-weight:600">Roof replacement — Building 3</td><td style="color:var(--text-2)">Harbor Hotel</td><td style="color:var(--text-2)">Roofing</td>
+            <td class="mono" style="text-align:right">$120,000</td><td class="mono" style="text-align:right">$41,880</td><td class="amt-pos mono" style="text-align:right">−65%</td>
+            <td><span class="badge b-manager">Manager review</span></td>
+            <td><div class="row-actions"><button class="btn-sm btn-ok">Approve</button><button class="btn-sm btn-reject">Reject</button></div></td></tr>
+
+        <tr class="conflict"><td style="font-weight:600">Elevator retrofit — Tower A</td><td style="color:var(--text-2)">Grand Resort</td><td style="color:var(--text-2)">Elevators</td>
+            <td class="mono" style="text-align:right">$96,500</td><td class="mono" style="text-align:right">$103,245</td><td class="amt-neg mono" style="text-align:right">+7%</td>
+            <td><span class="badge b-finance">Finance review</span></td>
+            <td><div class="row-actions"><span class="conflict-note">⚠ Approver 2 already acted — row refreshed</span></div></td></tr>
+
+        <tr class="approving"><td style="font-weight:600">HVAC unit — West Wing</td><td style="color:var(--text-2)">City Office</td><td style="color:var(--text-2)">HVAC</td>
+            <td class="mono" style="text-align:right">$210,000</td><td class="mono" style="text-align:right">$189,000</td><td class="amt-pos mono" style="text-align:right">−10%</td>
+            <td><span class="badge b-manager">Manager review</span></td>
+            <td><div class="row-actions"><span class="spin"></span><span style="color:var(--text-2);font-size:12px">Approving…</span></div></td></tr>
+
+        <tr><td style="font-weight:600">Life-safety sprinkler loop</td><td style="color:var(--text-2)">Harbor Hotel</td><td style="color:var(--text-2)">Life Safety</td>
+            <td class="mono" style="text-align:right">$54,000</td><td class="mono" style="text-align:right">$18,360</td><td class="amt-pos mono" style="text-align:right">−66%</td>
+            <td><span class="badge b-submitted">Submitted</span></td>
+            <td><div class="row-actions" style="color:var(--muted);font-size:12px">awaiting manager</div></td></tr>
+
+        <tr><td style="font-weight:600">Lobby renovation — phase 2</td><td style="color:var(--text-2)">City Office</td><td style="color:var(--text-2)">Renovation</td>
+            <td class="mono" style="text-align:right">$310,000</td><td class="mono" style="text-align:right">$365,800</td><td class="amt-neg mono" style="text-align:right">+18%</td>
+            <td><span class="badge b-approved">Approved</span></td>
+            <td><div class="row-actions" style="color:var(--muted);font-size:12px">—</div></td></tr>
+
+        <tr><td style="font-weight:600">Chiller replacement (draft)</td><td style="color:var(--text-2)">Grand Resort</td><td style="color:var(--text-2)">HVAC</td>
+            <td class="mono" style="text-align:right">$88,200</td><td class="mono" style="text-align:right">$0</td><td class="amt-pos mono" style="text-align:right">—</td>
+            <td><span class="badge b-draft">Draft</span></td>
+            <td><div class="row-actions"><button class="btn-sm" style="border:1px solid var(--border);background:transparent;color:var(--text-2)">Submit</button></div></td></tr>
+
+        <tr><td style="font-weight:600">Pool tiling redo</td><td style="color:var(--text-2)">Grand Resort</td><td style="color:var(--text-2)">Renovation</td>
+            <td class="mono" style="text-align:right">$42,000</td><td class="mono" style="text-align:right">$44,100</td><td class="amt-neg mono" style="text-align:right">+5%</td>
+            <td><span class="badge b-rejected">Rejected</span></td>
+            <td><div class="row-actions" style="color:var(--muted);font-size:12px">—</div></td></tr>
+      </table>
+      <div style="display:flex;justify-content:space-between;padding:12px 12px 4px;color:var(--muted);font-size:12px"><span>7 of 214 projects in scope</span><span>Page 1 · next ›</span></div>
+    </div>
+  </main>
+</div>
+</body>
+</html>

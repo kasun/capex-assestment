@@ -1,0 +1,32 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en" class="h-full" data-theme="{{ request.session.theme|default:'light' }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Full-stack assessment{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}" />
+    <script src="{% static 'js/vendor/htmx.min.js' %}" defer></script>
+    <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
+    <script>
+      // Send Django's CSRF cookie on every HTMX request so hx-post/hx-delete
+      // pass CsrfViewMiddleware. Requires the cookie to exist (ensure_csrf_cookie).
+      document.addEventListener("htmx:configRequest", (e) => {
+        const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+        if (match) e.detail.headers["X-CSRFToken"] = match[1];
+      });
+    </script>
+    <style>
+      [x-cloak] { display: none !important; }
+    </style>
+    {% block head %}{% endblock %}
+  </head>
+  <body class="h-full bg-fin-bg font-sans text-fin-text antialiased">
+    <div class="flex min-h-full gap-5 p-5">
+      {% include "partials/_sidebar.html" %}
+      <main class="min-w-0 flex-1">{% block content %}{% endblock %}</main>
+    </div>
+
+    {% block extra_body %}{% endblock %}
+  </body>
+</html>

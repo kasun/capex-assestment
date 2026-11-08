@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* Tailwind v4 auto-scans the repo (respecting .gitignore) for class names. */
+
+/* ------------------------------------------------------------------ */
+/* Bluefin design tokens — ported 1:1 from the pen.dev mockups.        */
+/* Light/dark values live on raw CSS vars so they swap at runtime;     */
+/* @theme inline maps them onto Tailwind utilities (bg-fin-*, etc.).   */
+/* ------------------------------------------------------------------ */
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+:root {
+  --fin-bg: #eef3ec;
+  --fin-card: #ffffff;
+  --fin-border: #dfe9dd;
+  --fin-text: #15281c;
+  --fin-text-2: #3f5e48;
+  --fin-muted: #7a9683;
+  --fin-accent: #2d5e3a;
+  --fin-accent-soft: #e4f0e6;
+  --fin-on-accent: #fbfdfb;
+  --fin-pos: #22885c;
+  --fin-neg: #b4483e;
+}
+
+[data-theme="dark"] {
+  --fin-bg: #0e1e16;
+  --fin-card: #152b20;
+  --fin-border: #234434;
+  --fin-text: #f2f7f3;
+  --fin-text-2: #b7cdbe;
+  --fin-muted: #7e9b8a;
+  --fin-accent: #7cd3a2;
+  --fin-accent-soft: #1c3a2a;
+  --fin-on-accent: #0b1b12;
+  --fin-pos: #7cd3a2;
+  --fin-neg: #e58c84;
+}
+
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-head: "Space Grotesk", "Inter", ui-sans-serif, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, monospace;
+  --color-fin-bg: var(--fin-bg);
+  --color-fin-card: var(--fin-card);
+  --color-fin-border: var(--fin-border);
+  --color-fin-text: var(--fin-text);
+  --color-fin-text-2: var(--fin-text-2);
+  --color-fin-muted: var(--fin-muted);
+  --color-fin-accent: var(--fin-accent);
+  --color-fin-accent-soft: var(--fin-accent-soft);
+  --color-fin-on-accent: var(--fin-on-accent);
+  --color-fin-pos: var(--fin-pos);
+  --color-fin-neg: var(--fin-neg);
+  --color-fin-inverse: #132c1f;
+  --color-fin-nav-active: #22553b;
+  --radius-card: 1rem;
+  --radius-row: 0.875rem;
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+}
+
+/* ------------------------------------------------------------------ */
+/* Vendored Google Fonts (latin subset, no CDN per repo rules).        */
+/* ------------------------------------------------------------------ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/inter-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/inter-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/inter-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/inter-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../fonts/space-grotesk-500.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/space-grotesk-600.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../fonts/space-grotesk-700.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/geist-mono-400.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/geist-mono-600.woff2") format("woff2");
+}
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+}

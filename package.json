@@ -1,0 +1,12 @@
+{
+  "name": "blueoceansp-full-stack",
+  "private": true,
+  "scripts": {
+    "css": "tailwindcss -i static/css/input.css -o static/css/tailwind.css --minify",
+    "css:watch": "tailwindcss -i static/css/input.css -o static/css/tailwind.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^4.1.0",
+    "@tailwindcss/cli": "^4.1.0"
+  }
+}

@@ -12,7 +12,11 @@ from decimal import Decimal
 
 from django import template
 
+from capex.models import Statuses
+
 register = template.Library()
+
+STANDARD_DISPLAYS = dict(Statuses.choices)
 
 
 @register.filter
@@ -57,6 +61,12 @@ def signed_pct(project) -> str:
     sign = "+" if pct > 0 else ("−" if pct < 0 else "")
     quarter = Decimal("0.01")
     return f"{sign}{abs(pct.quantize(quarter)):.2f}%"
+
+
+@register.filter
+def status_display(value: str) -> str:
+    """Readable name for a status code (fragments + timeline)."""
+    return STANDARD_DISPLAYS.get(value, value.replace("_", " "))
 
 
 @register.filter

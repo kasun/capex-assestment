@@ -46,7 +46,23 @@ class ProjectViewSet(ContentNegotiationMixin, viewsets.ModelViewSet):
         super().initial(request, *args, **kwargs)
 
     def get_queryset(self):
-        return svc.list_for(self.entitlements)
+        """Entitlement-scoped queryset with the request's own filters applied —
+        the single source for list (JSON + fragments) *and* object lookups,
+        so no code path can bypass either wall."""
+        qp = self.request.query_params
+        filters = {}
+        if qp.get("status"):
+            filters["status"] = qp["status"].strip()
+        if qp.get("fiscal_period"):
+            filters["fiscal_period"] = qp["fiscal_period"].strip()
+        if qp.get("category"):
+            filters["category"] = qp["category"].strip()
+        if qp.get("property"):
+            try:
+                filters["property_id"] = int(qp["property"])
+            except ValueError:
+                raise svc.ValidationError("property filter must be an integer id") from None
+        return svc.list_for(self.entitlements, **filters)
 
     # --- transitions --------------------------------------------------
 
@@ -55,9 +71,18 @@ class ProjectViewSet(ContentNegotiationMixin, viewsets.ModelViewSet):
         payload = s.TransitionInputSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         project = self.get_object()  # scoped → foreign id is a 404
-        updated = svc.apply_transition(
-            self.entitlements, project, payload.validated_data["action"], by=request.user
-        )
+        try:
+            updated = svc.apply_transition(
+                self.entitlements,
+                project,
+                payload.validated_data["action"],
+                by=request.user,
+                version=payload.validated_data.get("version"),
+            )
+        except svc.Conflict:
+            # Hand the handler the authoritative row for the loser's replay.
+            self.conflicting_project = svc.get_for(self.entitlements, project.pk)
+            raise
         if self.is_fragment_request():
             return Response(
                 self.fragment_context(project=updated),
@@ -87,7 +112,9 @@ class ProjectViewSet(ContentNegotiationMixin, viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         payload = s.ProjectWriteSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        project = svc.create(self.entitlements, **payload.validated_data)
+        data = dict(payload.validated_data)
+        data["property_id"] = data.pop("property")
+        project = svc.create(self.entitlements, **data)
         if self.is_fragment_request():
             return Response(
                 self.fragment_context(project=project), template_name=ROW_FRAGMENT, status=201

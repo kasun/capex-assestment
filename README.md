@@ -1,160 +1,131 @@
-# Full-stack assessment (bootstrap)
+# CapEx Platform — Multi-Tenant Budget & Approval (Take-Home Submission)
 
-Django + HTMX + Alpine.js, styled with Tailwind, managed with `uv`.
-SQLite by default; no build pipeline beyond CSS.
+Django 5 + DRF + HTMX/Alpine + Postgres + Redis + django-q2. A multi-tenant
+CapEx (capital expenditure) approvals platform: organization/property-scoped
+row-level security on *every* read and write, a multi-level approval state
+machine safe under concurrent actors, a background aggregation pipeline
+feeding a cached analytics dashboard, and tenant-scoped real-time updates
+over SSE.
 
-## Stack
+Spec-first worked from `SPEC.md` (reviewed mid-flight), architecture argued
+in **`DESIGN.md`** — this README covers **running it** and the honest ledger.
 
-| Layer     | Choice                                              |
-| --------- | --------------------------------------------------- |
-| Backend   | Django 5, HTTP layer serves both HTML and HTMX partials |
-| Frontend  | HTMX (partial swaps) + Alpine.js (local interactivity) |
-| Styling   | Tailwind v4 (Bluefin token set in `static/css/input.css`, light/dark themes; fonts vendored in `static/fonts/`) |
-| Packaging | `uv` (+ optional `make` aliases; raw commands in README) |
-| Testing   | `pytest` + `pytest-django`                          |
-| Linting   | `ruff`                                              |
+---
 
-## Setup
+## Run it (one command)
 
-```sh
-make setup
+```bash
+docker compose up --build
+# brings up: postgres + redis + api + q2-worker (+ one-shot init that runs
+# migrate, then loads the harness seed: 8 orgs / 54 properties / 58 users /
+# 72,000 projects / 198,424 approval events — org 1 is the "big tenant")
 ```
 
-This installs Python + Node deps, applies migrations, and builds the CSS once.
+App: **http://localhost:18000** (host ports deliberately avoid clashing with
+local Postgres/Redis; see below).
 
-## Run
+| Who to log in as (password for all: `Passw0rd!`) | What you'll see |
+|---|---|
+| `admin1@org1.example.com` | whole-org view: 30k projects aggregated across 5 properties (KPIs, both charts, backlog) |
+| `pm2@org1.example.com` | property_manager view: only their 1 property — smaller numbers, drafts + submits |
+| `appr…@org1.example.com` | approver: can move manager_review → finance_review → approved |
+| `view…@org1.example.com` | viewer: read-only everywhere (403 on any action) |
 
-```sh
-make run          # Django dev server on http://127.0.0.1:8000
-make css-watch    # optional second terminal: rebuild CSS on edit
-```
+The three things worth clicking (each maps to a rubric line):
 
-If pages look unstyled after editing templates, run `make css` — Tailwind v4
-scans the repo for class names and only emits what it finds.
+1. **Dashboard real-time** — open the dashboard, then in Projects submit/approve
+   a project; worker drains the dirty org in ~1s → rollup rewrite → stamp
+   publish → the dashboard's KPI panel swaps itself without reload (SSE).
+2. **Concurrent approvals → 409** — same project in two windows (approve +
+   reject both as visible to approver/admin): second actor's row
+   self-refreshes with the amber "concurrent action" note; the JSON API
+   returns `409` + winner state.
+3. **Wrong-token proof** — grab a token for a *viewer* and query an approval
+   transition, or a pm and hit another org's project id: 403 vs byte-identical
+   404 (`curl` snippets in the section below).
 
-## Everyday commands
-
-```sh
-make test         # pytest
-make lint         # ruff check
-make fmt          # ruff autofix + format
-make migrate      # apply migrations
-make shell        # Django shell
-```
-
-### Without make
-
-Every target is just a plain command — use these directly if `make` is not
-installed (the Makefile is a convenience alias over exactly these):
-
-```sh
-uv sync                                                     # setup: install Python deps
-npm install                                                 # setup: install Node deps (Tailwind)
-uv run manage.py migrate                                    # setup/migrate
-npx tailwindcss -i static/css/input.css -o static/css/tailwind.css --minify  # setup/css
-uv run manage.py runserver                                  # run
-npx tailwindcss -i static/css/input.css -o static/css/tailwind.css --watch   # css-watch
-uv run pytest                                               # test
-uv run ruff check .                                         # lint
-uv run ruff check --fix . && uv run ruff format .           # fmt
-uv run manage.py shell                                      # shell
-uv run manage.py collectstatic --noinput                    # collectstatic (production)
-```
-
-## Project layout
+## The API (content-negotiated: one router, two representations)
 
 ```
-config/              Django project (settings, urls, asgi, wsgi)
-core/                Main app (models, views, urls, forms, tests)
-templates/
-  base.html          App shell: sidebar layout, theme attr, CSRF wiring
-  partials/          _sidebar.html (app shell rail)
-  core/              Full-page templates
-    partials/        HTMX response fragments (never standalone pages)
-static/
-  css/input.css      Tailwind input incl. Bluefin design tokens (committed)
-  css/tailwind.css   Tailwind output (generated, git-ignored)
-  fonts/             Vendored Google Fonts: Inter, Space Grotesk, Geist Mono
-  js/vendor/         htmx.min.js, alpine.min.js (vendored, no CDN)
-designs/
-  bluefin-ui.pen     UI mockups (pen.dev); exports/ has PNG previews
+Authorization: Bearer token  +  Accept: application/json → JSON
+HX-Request: true (session)                              → HTML fragments (the app's own UI)
 ```
 
-## Design system
+```bash
+TOKEN=$(curl -s -X POST http://localhost:18000/api/auth/token/ \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"pm2@org1.example.com","password":"Passw0rd!"}' \
+  | python3 -c "import sys,json;print(json.load(sys.stdin)['access'])")
 
-The UI follows the **Bluefin** mockups (`designs/bluefin-ui.pen`, exported PNGs in
-`designs/exports/`). Tokens (colors, fonts, radii) live in `static/css/input.css`
-as CSS variables mapped through Tailwind's `@theme inline` — use the `fin-*`
-utilities (`bg-fin-card`, `text-fin-muted`, `rounded-card`, …), never raw hex
-values. Dark mode is server state: the sidebar toggle POSTs to `/theme/set/`,
-the session stores it, and `base.html` renders `<html data-theme=…>` before
-CSS loads (no flash).
-
-## The core pattern: server-rendered partials
-
-HTMX fetches fragments from Django; Django decides whether to render a whole
-page or just the fragment based on `request.htmx`. See `core/views.py`:
-
-```python
-if request.htmx:
-    return render(request, "core/partials/task_list.html", context)  # fragment
-return render(request, "core/home.html", context)  # full page
+curl -s http://localhost:18000/api/projects/ -H "Authorization: Bearer $TOKEN" | head
+curl -s -o /dev/null -w '%{http_code}\n' \
+     http://localhost:18000/api/projects/999999/ -H "Authorization: Bearer $TOKEN"   # 404, no confirmation
+curl -s http://localhost:18000/api/analytics/summary/ -H "Authorization: Bearer $TOKEN" | head
 ```
 
-Templates mirror that split: `templates/core/*.html` are full pages, and
-`templates/core/partials/*.html` are fragments swapped in by `hx-*` attributes.
+Tests: `cd backend && POSTGRES_HOST=localhost POSTGRES_PORT=15432
+REDIS_URL=redis://localhost:16379 uv run pytest ../backend/capex/tests -q`
+(**26 passed** — cross-tenant matrix incl. identical-404 bodies, state
+machine incl. CAS conflict/self-approval, rollup == fresh SQL ground truth
+for every org, idempotent re-sweep). Lint/design ship green (`ruff check`).
 
-## The demo app
+## Local dev without compose-docker for the app layer
 
-The `core` app ships with a task list that exercises the full loop: create via
-HTMX POST, inline toggle, delete with `hx-confirm`, and debounced search. Treat
-it as a living pattern reference and repurpose/delete it once the real
-assignment requirements land.
+The stack over colima/Docker covers everything; if you'd rather run the
+Django process on your host (live reload), the data stores still come up
+from compose:
 
-## Agent harness support
-
-This repo is designed to be worked on by any AI coding agent harness. There is
-one source of truth for agent guidance — [`AGENTS.md`](AGENTS.md) — and every
-other file points at it rather than duplicating it:
-
-| Harness                                              | File it reads                              |
-| ---------------------------------------------------- | ------------------------------------------ |
-| OpenCode, Codex, Cline, Amp, Zed, Jules, Windsurf    | `AGENTS.md` (natively)                     |
-| Claude Code                                          | `CLAUDE.md` → imports `AGENTS.md`          |
-| GitHub Copilot                                       | `.github/copilot-instructions.md` → same   |
-
-Deeper workflow guides ("skills") live in `.agents/skills/*/SKILL.md` and are
-exposed to specific harnesses via symlinks (`.opencode/skills`,
-`.claude/skills`). If you add a skill, add it once under `.agents/skills/` —
-every harness picks it up. Do not duplicate or fork `AGENTS.md` into pointers;
-edit the source and let the pointers ride along.
-
-## Docker
-
-No host tooling needed (no Python, `uv`, Node, or `make`):
-
-```sh
-docker compose up --build    # http://localhost:8000
-docker compose run tests     # the pytest suite inside a dev image (test deps live there, not in the web image)
-docker compose down          # stop
+```bash
+docker compose up -d db redis          # host ports 15432 (pg) / 16379 (redis)
+cd backend && POSTGRES_PORT=15432 REDIS_URL=redis://localhost:16379 \
+  uv run manage.py runserver           # http://127.0.0.1:8000
 ```
 
-Runs with `DJANGO_DEBUG=0` (whitenoise serves static files; `collectstatic`
-happens at image build). The SQLite database lives inside the container, so it
-is re-created fresh each run — the container is a self-contained demo, not
-persistent storage. Set `DJANGO_SECRET_KEY` for anything non-trivial.
+Ports on purpose: host Postgres/Redis may already be running on 5432/6379;
+the compose files publish on **15432/16379** to prevent shadowing bugs
+(we hit one, then made it structural). The *containers themselves* always
+use the standard ports internally.
 
-## Production-ish config
+Toolchain: `make setup` (uv + npm tailwind tooling) → `make run` /
+`make test` / `make lint` / `make migrate`. Manage commands of note:
+`load_seed --scale big` (vendored harness generator, ids preserved so the
+`ENTITLEMENTS.md` assertions hold), nothing else custom.
 
-Environment variables: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG` (default on),
-`DJANGO_ALLOWED_HOSTS`. `DEBUG=0` switches static storage to whitenoise's
-compressed manifest storage and requires `collectstatic` to be run first.
+## Built vs. deferred (with weight accounting)
 
-## Why HTMX + Alpine (not React)
+| Area | Built |
+|---|---|
+| Central RLS (policy.py, content-negotiated single router) | **yes** |
+| Multi-level approval state machine + append-only audit events + CAS/version | **yes** |
+| Background aggregation (dirty-org drain → per-org full re-reslice) + versioned-key Redis cache + reconciliation sweep | **yes** |
+| Tenant-scoped real-time (SSE over pub/sub; snapshot-on-connect; keep-alives) | **yes** |
+| HTMX dashboard (KPIs + 2 charts + backlog + paging + role-aware actions + optimistic row states) | **yes** |
+| Tests: cross-tenant denial / state machine / aggregation correctness | **yes (26)** |
+| Postgres-native RLS, asyncio SSE rewrite, incremental rollups | deferred, argued in DESIGN.md §7 |
+| SSO/Azure AD, export, extra roles' full UIs | deferred, identified stub points in DESIGN.md |
 
-Server-rendered Django templates already produce the HTML; HTMX handles
-network-triggered DOM updates without writing fetch/JSON glue, and Alpine
-covers client-local state (dropdowns, modals, tabs) declaratively inside
-templates. React is only worth introducing if the assignment ends up needing
-heavy client-side state, real-time streams, or a component ecosystem — see
-`AGENTS.md` for the guidance on making that call.
+The one *deliberate stack deviation* — HTMX+Alpine instead of React/RTK/MUI —
+is stated and defended in `DESIGN.md` §7 (server-computed aggregates are
+already RLS-scoped; a client copy of those rules is negative surface; the
+plan was reviewed with the reviewer mid-build).
+
+## Where in the code
+
+```
+backend/capex/
+  models.py        # Organization/Property/User/Project/ApprovalEvent/Budget/Rollup/Stamp
+  policy.py        # entitlements + scoping (the authorization brain)
+  services/        # CRUD + transition table + typed domain errors → HTTP codes
+  api/             # DRF viewsets, renderers (content negotiation), exception mapping
+  rollups.py       # worker-side aggregation, dirty drain, stamp/publish, cached reads
+  sse.py           # tenant-scoped SSE stream
+  pages.py         # session-authenticated dashboard/projects/detail shells
+  harness/         # vendored assignment generator (verbatim; keeps ids stable)
+frontend/templates/capex/   # page shells + the fragments (partials) the API serves
+designs/           # approved pen.dev mockups + exported previews (UI reference)
+```
+
+Time-per-area (6h box, as built with the reviewer's step-approvals running):
+stack & schema 0:40 · policy+API 1:10 · state machine 0:35 · aggregation+cache 0:50 ·
+real-time 0:30 · dashboard+UI 0:45 · seeder/docker/first-run 0:35 · tests 0:40 ·
+DESIGN/README 0:45 — with mid-flight corrections called out in git history.

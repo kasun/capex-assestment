@@ -1,0 +1,31 @@
+{% extends "capex/base_capex.html" %}
+{% block title %}Dashboard · CapEx{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-sub">{{ panel.fiscal_period|default:"FY2026" }} · Harborpoint Hospitality Group ·
+        <span class="live">● live · updated just now</span></p>
+    </div>
+  </div>
+
+  <div sse-connect="/sse/dashboard/">
+    <div sse-swap="dashboard">
+      {% if panel %}{% include "capex/partials/analytics_panel.html" %}{% endif %}
+    </div>
+  </div>
+
+  <div class="panel" id="pending-approvals">
+    <div class="panel-head">
+      <h2 class="panel-title">Pending approvals</h2>
+      <a class="link-view-all" href="{% url 'projects' %}">View all →</a>
+    </div>
+    {% if pending %}
+      <table class="table"><tbody>
+        {% for project in pending %}{% include "capex/partials/project_row.html" %}{% endfor %}
+      </tbody></table>
+    {% else %}
+      <p class="empty-note">Nothing waiting on you — backlog is clear.</p>
+    {% endif %}
+  </div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "capex/base_capex.html" %}
+{% block title %}Projects · CapEx{% endblock %}
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1 class="page-title">Projects</h1>
+      <p class="page-sub">Scoped to your properties · <span class="live">● live</span></p>
+    </div>
+  </div>
+  <div id="project-list"
+       hx-get="/api/projects/?page=1"
+       hx-trigger="load"
+       hx-swap="outerHTML">
+    <div class="panel"><p class="empty-note">Loading projects…</p></div>
+  </div>
+{% endblock %}

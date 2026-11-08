@@ -133,6 +133,10 @@ class Project(models.Model):
     budget_amount = models.DecimalField(max_digits=16, decimal_places=2)
     actual_cost = models.DecimalField(max_digits=16, decimal_places=2, default=0)
     status = models.CharField(max_length=16, choices=Statuses.choices, default=Statuses.DRAFT)
+    # Optimistic concurrency guard (SPEC §6): at each cascade transition the
+    # API filters on the version the client saw; a loser of the race gets a
+    # 409 with the fresh row. Present as of the concurrency step commit.
+    version = models.PositiveIntegerField(default=1)
     submitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

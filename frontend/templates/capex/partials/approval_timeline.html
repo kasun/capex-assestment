@@ -1,0 +1,17 @@
+{% load capex_extras %}
+<div class="panel" id="approval-timeline">
+  <div class="panel-head"><h2 class="panel-title">Approval timeline</h2>
+    <span class="hint-inline">append-only event log</span></div>
+  <ol class="timeline">
+    {% for event in history %}
+    <li class="event {% if event.to_status == 'rejected' %}rejected-ev{% elif event.to_status == 'approved' %}done{% elif forloop.last %}current{% else %}done{% endif %}">
+      <span class="ev-title">{{ event.to_status|status_display }}</span>
+      <span class="ev-meta">{{ event.at|date:"M d, Y H:i" }}
+        {% if event.by_user %}· by {{ event.by_user.email }}{% endif %} · level {{ event.level }}</span>
+    </li>
+    {% empty %}
+      <li class="event current"><span class="ev-title">No events yet</span>
+        <span class="ev-meta">history starts at the first transition</span></li>
+    {% endfor %}
+  </ol>
+</div>

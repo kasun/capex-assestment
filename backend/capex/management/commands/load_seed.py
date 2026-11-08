@@ -58,10 +58,10 @@ class Command(BaseCommand):
         m.Budget.objects.all().delete()
         m.User.property_scope.through.objects.all().delete()
         m.User.objects.all().delete()
+        m.DashboardStamp.objects.all().delete()
+        m.ProjectRollup.objects.all().delete()
         m.Property.objects.all().delete()
         m.Organization.objects.all().delete()
-        m.ProjectRollup.objects.all().delete()
-        m.DashboardStamp.objects.all().delete()
 
         m.Organization.objects.bulk_create(
             [m.Organization(id=o["id"], name=o["name"], slug=o["slug"]) for o in orgs],
@@ -143,6 +143,19 @@ class Command(BaseCommand):
             ],
             batch_size=BATCH,
         )
+
+        # AutoField sequences stay at 1 after bulk_create with explicit ids —
+        # reset them or the first app-created row collides. Postgres-only
+        # (SQLite test path unaffected). We run Postgres in every env.
+        from django.db import connection
+
+        with connection.cursor() as cursor:
+            for model in (m.Organization, m.Property, m.User, m.Budget, m.Project, m.ApprovalEvent):
+                table = model._meta.db_table
+                cursor.execute(
+                    f"SELECT setval(pg_get_serial_sequence('{table}', 'id'), "
+                    f"COALESCE((SELECT MAX(id) FROM {table}), 1))"
+                )
 
         self.stdout.write(
             self.style.SUCCESS(

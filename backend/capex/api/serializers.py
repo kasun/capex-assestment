@@ -84,3 +84,4 @@ class ProjectWriteSerializer(serializers.Serializer):
 
 class TransitionInputSerializer(serializers.Serializer):
     action = serializers.ChoiceField(choices=("submit", "approve", "reject"))
+    version = serializers.IntegerField(required=False, min_value=0, allow_null=True)

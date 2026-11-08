@@ -1,0 +1,44 @@
+{% extends "capex/base_capex.html" %}
+{% block title %}Sign in · CapEx{% endblock %}
+{% block content %}
+<div class="login-shell">
+  <div class="card login-card">
+    <div class="brand"><div class="brand-mark">C</div>
+      <div><div class="brand-name">CapEx</div>
+      <div class="brand-sub">Capital Expenditure Approvals</div></div></div>
+    <h1 class="login-title">Sign in</h1>
+    <p class="login-sub">Multi-tenant workspace · session for the UI, JWT for the API — one policy layer</p>
+    <form method="post" class="login-form">
+      {% csrf_token %}
+      <div class="field"><label for="{{ form.username.id_for_label }}">Email</label>
+        <input id="{{ form.username.id_for_label }}" name="username" type="text"
+               value="{{ form.username.value|default:'' }}" required autofocus></div>
+      <div class="field"><label for="{{ form.password.id_for_label }}">Password</label>
+        <input id="{{ form.password.id_for_label }}" name="password" type="password" required></div>
+      {% if form.errors %}<div class="error-banner" role="alert"><span class="error-ico">✕</span> {{ form.errors }}</div>{% endif %}
+      <input type="hidden" name="next" value="{% if request.GET.next %}{{ request.GET.next }}{% else %}/{% endif %}">
+      <button type="submit" class="btn btn-primary login-btn">Sign in</button>
+    </form>
+    <div class="hint-inline login-hint">Seeded demo users all use <span class="mono">$Passw0rd!</span> — roles:
+      org_admin / property_manager / approver / viewer</div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_body %}
+<style>
+  .login-shell { display:grid; place-items:center; min-height:100vh; }
+  .login-card { width:390px; background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:30px; display:flex; flex-direction:column; gap:14px; }
+  .login-title { font-size:19px; font-weight:700; margin:0; }
+  .login-sub { color:var(--muted); font-size:12.5px; margin-top:-8px; }
+  .login-form { display:flex; flex-direction:column; gap:12px; }
+  .field { display:flex; flex-direction:column; gap:6px; }
+  .field label { font-size:11.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; font-weight:600; }
+  .field input { background:var(--bg); border:1px solid var(--border); border-radius:9px;
+    padding:11px 13px; color:var(--text); font-size:14px; width:100%; }
+  .field input:focus { outline:1px solid var(--primary); }
+  .login-btn { width:100%; }
+  .login-hint { font-size:11.5px; }
+</style>
+{% endblock %}

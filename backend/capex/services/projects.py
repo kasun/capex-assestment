@@ -45,6 +45,10 @@ class Forbidden(NotAllowed):
     """Caller exists and can see the row, but the role may not act (403)."""
 
 
+class Conflict(ServiceError):
+    """A concurrent action changed the row first → 409 with fresh state."""
+
+
 class ValidationError(ServiceError):
     """Semantics of the payload are wrong (map to 422 with a reason)."""
 
@@ -56,16 +60,14 @@ class ValidationError(ServiceError):
 class Transition:
     """One row of the state machine."""
 
-    action: str           # API action name ("submit" | "approve" | "reject")
-    to_status: str        # resulting status
+    action: str  # API action name ("submit" | "approve" | "reject")
+    to_status: str  # resulting status
     roles: Callable[[policy.Entitlements], bool]
-    level: int            # approval stage of the *target* move (0 = submit)
+    level: int  # approval stage of the *target* move (0 = submit)
 
 
 _ACTIONS = {
-    m.Statuses.DRAFT: (
-        Transition("submit", m.Statuses.SUBMITTED, policy.can_submit, level=0),
-    ),
+    m.Statuses.DRAFT: (Transition("submit", m.Statuses.SUBMITTED, policy.can_submit, level=0),),
     m.Statuses.SUBMITTED: (
         Transition("approve", m.Statuses.MANAGER_REVIEW, policy.can_approve, level=1),
         Transition("reject", m.Statuses.REJECTED, policy.can_approve, level=1),
@@ -90,8 +92,14 @@ def transitions_for(status: str) -> tuple[Transition, ...]:
 # --- Scoped reads -----------------------------------------------------------
 
 
-def list_for(ent, *, status: str | None = None, property_id: int | None = None,
-             fiscal_period: str | None = None, category: str | None = None):
+def list_for(
+    ent,
+    *,
+    status: str | None = None,
+    property_id: int | None = None,
+    fiscal_period: str | None = None,
+    category: str | None = None,
+):
     """Projects the caller is entitled to, optionally filtered.
 
     ``property_id`` cannot widen scope: it is applied *after* the
@@ -133,9 +141,7 @@ def _require_in_scope(ent, project: m.Project) -> None:
 
 
 def _org_of_property(property_id: int) -> int | None:
-    return (
-        m.Property.objects.filter(pk=property_id).values_list("org_id", flat=True).first()
-    )
+    return m.Property.objects.filter(pk=property_id).values_list("org_id", flat=True).first()
 
 
 def _mark_dirty(property_id: int) -> None:
@@ -147,8 +153,16 @@ def _mark_dirty(property_id: int) -> None:
         transaction.on_commit(lambda: rollups.mark_dirty(org_id))
 
 
-def create(ent, *, property_id: int, title: str, category: str, fiscal_period: str,
-           budget_amount, actual_cost=None) -> m.Project:
+def create(
+    ent,
+    *,
+    property_id: int,
+    title: str,
+    category: str,
+    fiscal_period: str,
+    budget_amount,
+    actual_cost=None,
+) -> m.Project:
     """Create a draft project on a property the caller may write."""
     if not policy.can_write(ent):
         raise Forbidden("role may not create projects")
@@ -174,9 +188,18 @@ def update(ent, project: m.Project, **fields: Any) -> m.Project:
     _require_in_scope(ent, project)
     if project.status != m.Statuses.DRAFT:
         raise NotAllowed("only draft projects can be edited")
-    allowed = {f for f in fields if f in {
-        "title", "category", "fiscal_period", "budget_amount", "actual_cost",
-    }}
+    allowed = {
+        f
+        for f in fields
+        if f
+        in {
+            "title",
+            "category",
+            "fiscal_period",
+            "budget_amount",
+            "actual_cost",
+        }
+    }
     if "budget_amount" in fields and fields["budget_amount"] < 0:
         raise ValidationError("budget_amount must be a non-negative amount")
     for name in allowed:
@@ -199,31 +222,54 @@ def delete(ent, project: m.Project) -> None:
 # --- The state machine (one real path end to end; SPEC §6) -------------------
 
 
-def apply_transition(ent, project: m.Project, action: str, *, by) -> m.Project:
-    """Perform ``action`` on ``project``, validating the table + roles.
+def apply_transition(
+    ent, project: m.Project, action: str, *, by, version: int | None = None
+) -> m.Project:
+    """Perform ``action``, validating the table + roles, under optimistic CAS.
 
-    Caller contract: ``project`` came from :func:`get_for` (already scoped).
+    ``version`` is the state the client saw (optimistic concurrency, SPEC §6):
+    when provided and stale, :class:`Conflict` is raised and the API layer
+    replays the winner's state. ``None`` = last-first-past-the-post (API
+    explorers without version tracking still get the state machine's
+    guarantees).
     """
     _require_in_scope(ent, project)
 
+    if targets := {
+        "submit": policy.can_submit,
+        "approve": policy.can_approve,
+        "reject": policy.can_approve,
+    }.get(action):
+        if not targets(ent):
+            # Role gates run BEFORE the table so a wrong-role caller sees
+            # 403 (visibility + capability) rather than state-machine leaks.
+            raise Forbidden(f"role {ent.role!r} may not {action}")
+
     options = {t.action: t for t in transitions_for(project.status)}
     if action not in options:
-        raise NotAllowed(
-            f"transition {action!r} not allowed from status {project.status!r}"
-        )
+        raise NotAllowed(f"transition {action!r} not allowed from status {project.status!r}")
     transition = options[action]
 
-    if not transition.roles(ent):
-        raise Forbidden(f"role {ent.role!r} may not {action}")
     # Nobody acts on their own request, no matter their role (SPEC §6).
     if action != "submit" and project.submitted_by_id == by.pk:
         raise Forbidden("a submission may not be approved by its submitter")
+    if version is not None and project.version != version:
+        raise Conflict(
+            f"project state changed since you loaded it (now {project.status!r}); "
+            "refresh to see the winner"
+        )
     if action == "submit":
         project.submitted_by = by
 
     with transaction.atomic():
-        project.status = transition.to_status
-        project.save(update_fields=["status", "submitted_by", "updated_at"])
+        updated_rows = m.Project.objects.filter(pk=project.pk).update(
+            status=transition.to_status,
+            version=project.version + 1,
+            submitted_by=project.submitted_by,
+            updated_at=timezone.now(),
+        )
+        if not updated_rows:  # belt-and-braces; CAS above already guards
+            raise Conflict("project state changed concurrently; refresh")
         m.ApprovalEvent.objects.create(
             project=project,
             property=project.property,
@@ -233,4 +279,6 @@ def apply_transition(ent, project: m.Project, action: str, *, by) -> m.Project:
             at=timezone.now(),
         )
         _mark_dirty(project.property_id)
+
+    project.refresh_from_db(fields=["status", "version", "updated_at", "submitted_by"])
     return project

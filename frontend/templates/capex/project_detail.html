@@ -1,0 +1,10 @@
+{% extends "capex/base_capex.html" %}
+{% block title %}{{ project.title|default:"Project" }} · CapEx{% endblock %}
+{% block content %}
+  {% if project %}
+    {% include "capex/partials/project_detail.html" with project=project detail_mode="page" %}
+    {% include "capex/partials/approval_timeline.html" with project=project history=history %}
+  {% else %}
+    <div class="panel"><p class="empty-note">Project not found in your scope.</p></div>
+  {% endif %}
+{% endblock %}

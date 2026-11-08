@@ -1,6 +1,6 @@
 {% load capex_extras %}
-<tr data-project="{{ project.id }}">
-  <td class="cell-title">{{ project.title }}</td>
+<tr data-project="{{ project.id }}" {% if conflict %}class="row-conflict"{% endif %}>
+  <td class="cell-title">{{ project.title }}{% if conflict %}<span class="chip chip-warn" style="margin-left:8px">concurrent action — state refreshed</span>{% endif %}</td>
   <td class="cell-dim">{{ project.property.name }}</td>
   <td class="cell-dim">{{ project.get_category_display }}</td>
   <td class="mono cell-num">{{ project.budget_amount|money }}</td>
@@ -20,12 +20,14 @@
             hx-target="closest tr[data-project]" hx-swap="outerHTML">
         {% csrf_token %}
         <input type="hidden" name="action" value="approve">
+        <input type="hidden" name="version" value="{{ project.version }}">
         <button type="submit" class="btn-sm btn-ok">Approve</button>
       </form>
       <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
             hx-target="closest tr[data-project]" hx-swap="outerHTML">
         {% csrf_token %}
         <input type="hidden" name="action" value="reject">
+        <input type="hidden" name="version" value="{{ project.version }}">
         <button type="submit" class="btn-sm btn-reject">Reject</button>
       </form>
     {% elif project.status == "submitted" and can_approve %}

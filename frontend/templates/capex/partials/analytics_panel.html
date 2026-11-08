@@ -1,0 +1,49 @@
+{% load capex_extras %}
+<div id="analytics-panel" class="analytics" data-version="{{ panel.org_id }}-{{ panel.scope }}">
+  {% if panel.empty %}
+    <div class="panel"><p class="empty-note">No figures yet — the worker refreshes within seconds of the next write.</p></div>
+  {% else %}
+    <section class="kpi-row" aria-label="Key figures">
+      <div class="kpi"><span class="kpi-label">Budget allocated</span><span class="kpi-value mono">{{ panel.budget_allocated_org|money }}</span><span class="kpi-meta">per-property FY allocations</span></div>
+      <div class="kpi"><span class="kpi-label">Committed budget</span><span class="kpi-value mono">{{ panel.budget_committed|money }}</span><span class="kpi-meta">project budgets · {{ panel.property_count }} properties</span></div>
+      <div class="kpi"><span class="kpi-label">Actuals</span><span class="kpi-value mono">{{ panel.actual_sum|money }}</span><span class="kpi-meta">{{ panel.project_count }} projects</span></div>
+      <div class="kpi"><span class="kpi-label">Variance</span>
+        <span class="kpi-value mono {% if panel.variance_pct and panel.variance_pct > 0 %}amt-neg{% else %}amt-pos{% endif %}">
+          {% if panel.variance_pct %}{{ panel.variance_pct|floatformat:2 }}%{% else %}±0%{% endif %}
+        </span>
+        <span class="kpi-meta">vs committed</span>
+      </div>
+      <div class="kpi"><span class="kpi-label">Approval backlog</span><span class="kpi-value kpi-num">{{ panel.pending_count }}</span><span class="kpi-meta chip-warn chip">{% if panel.avg_cycle_hours %}avg cycle {{ panel.avg_cycle_hours }}h{% else %}no decisions yet{% endif %}</span></div>
+    </section>
+
+    <section class="charts-row">
+      <div class="panel" id="chart-budget-actuals">
+        <h3 class="panel-title">Budget vs actuals by category</h3>
+        <div class="bars">
+          {% for cat, cell in panel.by_category.items %}
+            <div class="cat">
+              <div class="pair{% if cell.actual > cell.budget %} over{% endif %}">
+                <span class="pbar p-budget" style="height: {{ cell.budget_height }}px"></span>
+                <span class="pbar p-actual{% if cell.actual > cell.budget %} p-over{% endif %}" style="height: {{ cell.actual_height }}px"></span>
+              </div>
+              <span class="cat-label">{{ cat }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="panel" id="chart-spend-utilization">
+        <h3 class="panel-title">Spend utilization</h3>
+        {% for cat, cell in panel.by_category.items %}
+          {% widthratio cell.actual cell.budget 1 as share %}
+          <div class="spend-row">
+            <div class="top">
+              <span>{{ cat }}{% if cell.actual > cell.budget %}<span class="chip-neg chip">Over</span>{% endif %}</span>
+              <span class="amt mono">{% if cell.budget %}{{ share }}%{% else %}—{% endif %}</span>
+            </div>
+            <div class="track"><span class="fill{% if cell.actual > cell.budget %} fill-over{% else %}{% if share < 80 %} fill-ok{% endif %}{% endif %}" style="width: {% if share > 100 %}100{% else %}{{ share|floatformat:0 }}{% endif %}%"></span></div>
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+</div>

@@ -1,0 +1,68 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en"
+      class="h-full"
+      data-theme="{{ request.session.theme|default_if_none:'' }}"
+      hx-ext="sse">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}CapEx — Capital Expenditure Approvals{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/capex.css' %}" />
+  <script src="{% static 'js/vendor/htmx.min.js' %}" defer></script>
+  <script src="{% static 'js/vendor/alpine.min.js' %}" defer></script>
+  <script>
+    // CSRF cookie → header on every HTMX exchange (session auth is CSRF-enforced).
+    document.addEventListener("htmx:configRequest", (e) => {
+      const match = document.cookie.match(/(?:^|;\s*)csrftoken=([^;]+)/);
+      if (match) e.detail.headers["X-CSRFToken"] = match[1];
+    });
+  </script>
+  <style>[x-cloak]{display:none!important}</style>
+  {% block head %}{% endblock %}
+</head>
+<body class="h-full bg-cap-bg font-sans text-cap-text antialiased">
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">C</div>
+      <div><div class="brand-name">CapEx</div>
+      <div class="brand-sub">Capital Expenditure Approvals</div></div>
+    </div>
+    <nav class="nav">
+      <a href="{% url 'dashboard' %}" {% if request.resolver_match.url_name == 'dashboard' %}class="active"{% endif %}>
+        <span class="nav-ico">▦</span> Dashboard</a>
+      <a href="{% url 'projects' %}" {% if request.resolver_match.url_name == 'projects' %}class="active"{% endif %}>
+        <span class="nav-ico">▤</span> Projects</a>
+    </nav>
+    <div class="scope">
+      <div class="scope-label">Access scope</div>
+      <div class="scope-value">
+        {% if ent %}
+          {% if ent.property_ids|length == 0 %}<b>Whole org</b><br>resolved org-wide
+          {% elif ent.role == 'org_admin' %}<b>Whole org</b><br>all properties
+          {% else %}{{ ent.property_ids|length }} propert{{ ent.property_ids|length|pluralize }}<br>assigned subset
+          {% endif %}
+        {% else %}<em>none</em>
+        {% endif %}
+      </div>
+    </div>
+    <div class="user">
+      <div class="avatar">{{ user.get_username|slice:":2"|upper }}</div>
+      <div><div class="user-name">{{ user.get_full_name|default:user.get_username }}</div>
+      <div class="user-mail">{{ user.email }}</div></div>
+    </div>
+  </aside>
+
+  <main class="main">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="error-banner" role="alert"><span class="error-ico">✕</span> {{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% block extra_body %}{% endblock %}
+</body>
+</html>

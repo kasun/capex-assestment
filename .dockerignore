@@ -1,5 +1,6 @@
 # Build context hygiene — the image only needs pyproject/lock + backend/ + frontend/
 .git
+__pycache__/
 .venv
 node_modules
 ruff_cache

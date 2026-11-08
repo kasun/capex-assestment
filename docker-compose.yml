@@ -1,7 +1,12 @@
 # Multi-tenant CapEx platform — full stack bring-up:
 #   docker compose up --build   → db + redis + api + q2 worker (+ one-shot init)
-# The app is served at http://localhost:8000 (login admin@org1.example.com /
-# Passw0rd! after seeding).
+# The app is served at http://localhost:18000 (login admin1@org1.example.com /
+# Passw0rd! after seeding). Host ports 15xxx avoid clashing with locally
+# running Postgres/Redis/Django instances.
+#
+# Service names are pinned via fixed IPs + extra_hosts because some
+# container runtimes (colima) flakily resolve compose-embedded DNS — and a
+# worker that can't find the broker should fail loudly, not wander.
 
 services:
   db:
@@ -19,11 +24,17 @@ services:
       interval: 3s
       timeout: 3s
       retries: 10
+    networks:
+      default:
+        ipv4_address: 172.28.0.2
 
   redis:
     image: redis:7-alpine
     ports:
       - "16379:6379"
+    networks:
+      default:
+        ipv4_address: 172.28.0.3
 
   init:
     build: .
@@ -33,6 +44,9 @@ services:
       DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,api
       POSTGRES_HOST: db
       REDIS_URL: redis://redis:6379
+    extra_hosts:
+      - "db:172.28.0.2"
+      - "redis:172.28.0.3"
     depends_on:
       db:
         condition: service_healthy
@@ -43,8 +57,11 @@ services:
     build: .
     command: gunicorn --bind 0.0.0.0:8000 --workers 2 --worker-class uvicorn.workers.UvicornWorker config.asgi:application
     ports:
-      - "8000:8000"
+      - "18000:8000"
     environment: *app-env
+    extra_hosts:
+      - "db:172.28.0.2"
+      - "redis:172.28.0.3"
     depends_on:
       init:
         condition: service_completed_successfully
@@ -53,10 +70,19 @@ services:
     build: .
     command: python manage.py qcluster
     environment: *app-env
+    extra_hosts:
+      - "db:172.28.0.2"
+      - "redis:172.28.0.3"
     depends_on:
       init:
         condition: service_completed_successfully
     restart: unless-stopped
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
 
 volumes:
   pgdata:

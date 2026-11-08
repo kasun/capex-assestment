@@ -37,3 +37,7 @@ extend-exclude = ["*/migrations/*"]
 [tool.ruff.lint]
 select = ["E", "F", "I", "W", "B", "DJ"]
 ignore = ["DJ001"]  # null=True on model fields is fine
+
+[tool.ruff.lint.per-file-ignores]
+# Vendored verbatim from the assignment harness — never restyled.
+"**/capex/harness/**" = ["ALL"]

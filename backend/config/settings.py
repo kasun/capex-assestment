@@ -8,6 +8,7 @@ Single Postgres DB + single Redis are the two external dependencies.
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlsplit
 
 # backend/ — the Django project root (manage.py, config/, capex/).
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,7 +23,11 @@ ALLOWED_HOSTS = [
     h for h in os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h
 ]
 CSRF_TRUSTED_ORIGINS = [
-    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000").split(",") if o
+    o
+    for o in os.environ.get(
+        "DJANGO_CSRF_TRUSTED_ORIGINS", "http://localhost:8000,http://localhost:18000"
+    ).split(",")
+    if o
 ]
 
 INSTALLED_APPS = [
@@ -87,9 +92,8 @@ DATABASES = {
 }
 
 REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379")
-_REDIS_PARTS = REDIS_URL.replace("redis://", "").split("/")
-_REDIS_HOST, _REDIS_PORT, _REDIS_DB = (_REDIS_PARTS + ["0"] * 2)[:3]
-REDIS_DB_NUM = int(_REDIS_DB or 0)
+_REDIS = urlsplit(REDIS_URL)
+REDIS_DB_NUM = int((_REDIS.path or "/0").lstrip("/") or 0)
 
 CACHES = {
     "default": {
@@ -104,7 +108,11 @@ Q_CLUSTER = {  # django-q2: broker = Redis, scheduler in the same qcluster proce
     "timeout": 300,
     "retry": 360,  # must exceed timeout or django-q2 re-runs running jobs
     "catch_up": False,  # don't stampede scheduled catch-ups on worker startup
-    "redis": {"host": _REDIS_HOST, "port": _REDIS_PORT, "db": REDIS_DB_NUM},
+    "redis": {
+        "host": _REDIS.hostname,
+        "port": _REDIS.port or 6379,
+        "db": REDIS_DB_NUM,
+    },
 }
 
 # --- Auth ------------------------------------------------------------------

@@ -1,37 +1,38 @@
-.PHONY: help setup run css css-watch test lint fmt format migrate shell
+# CapEx platform — thin command aliases (see README for the full runbook).
+# Django lives in backend/; data stores come from docker compose (db/redis).
+
+.PHONY: help setup run test lint fmt migrate seed worker css collectstatic
 
 help: ## Show this help
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-12s %s\n", $$1, $$2}'
 
-setup: ## One-time install: Python deps, Node deps (Tailwind)
+setup: ## uv deps + tailwind tooling + local DB/redis via compose
 	uv sync
 	npm install
-	uv run manage.py migrate
-	npx tailwindcss -i static/css/input.css -o static/css/tailwind.css --minify
+	docker compose up -d db redis
 
-run: ## Start the dev server (http://127.0.0.1:8000)
-	uv run manage.py runserver
+DB_ENV := POSTGRES_HOST=${POSTGRES_HOST:-localhost} POSTGRES_PORT=${POSTGRES_PORT:-15432} REDIS_URL=${REDIS_URL:-redis://localhost:16379}
 
-css: ## Rebuild Tailwind CSS after editing class names
-	npx tailwindcss -i static/css/input.css -o static/css/tailwind.css --minify
+run: ## Run the API/dev-server on :8000 (local venv, compose data stores)
+	cd backend && $(DB_ENV) uv run manage.py runserver
 
-css-watch: ## Rebuild Tailwind CSS on change (run in another terminal)
-	npx tailwindcss -i static/css/input.css -o static/css/tailwind.css --watch
+test: ## Test suite (pytest; uses the compose data stores)
+	cd backend && $(DB_ENV) uv run pytest ../backend/capex/tests $(PYTEST_ARGS)
 
-test: ## Run the test suite
-	uv run pytest
+lint: ## ruff
+	cd backend && uv run ruff check .
 
-lint: ## Lint with ruff
-	uv run ruff check .
+fmt: ## ruff autofix + format
+	cd backend && uv run ruff check --fix --unsafe-fixes . && uv run ruff format .
 
-fmt: ## Fix formatting and imports with ruff
-	uv run ruff check --fix . && uv run ruff format .
+migrate: ## Apply migrations
+	cd backend && $(DB_ENV) uv run manage.py migrate
 
-migrate: ## Run pending migrations
-	uv run manage.py migrate
+seed: ## (Re)load the deterministic harness dataset (big tenant included)
+	cd backend && $(DB_ENV) uv run manage.py load_seed --scale big
 
-shell: ## Django shell
-	uv run manage.py shell
+worker: ## Local q2 worker against the compose redis
+	cd backend && $(DB_ENV) uv run manage.py qcluster
 
-collectstatic: ## Collect static files for production
-	uv run manage.py collectstatic --noinput
+css: ## Rebuild tailwind (tokens/components in frontend/static/css)
+	npx tailwindcss -i frontend/static/css/input.css -o frontend/static/css/tailwind.css --minify

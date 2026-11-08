@@ -12,5 +12,6 @@ from django.urls import include, path
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("accounts/", include("django.contrib.auth.urls")),
-    # Root page + /api + /sse mount when the capex app lands.
+    path("api/", include("capex.api.urls")),
+    # App shell pages + /sse mount with capex.pages/sse.
 ]

@@ -125,6 +125,7 @@ REST_FRAMEWORK = {
     # Deny-by-default: a view that forgets its permission leaks loudly (401/403),
     # not silently. ScopedModelView then refines to object-level scoping.
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "capex.api.exceptions.service_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_THROTTLE_RATES": {"auth": "30/minute"},

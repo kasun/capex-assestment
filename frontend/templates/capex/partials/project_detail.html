@@ -1,0 +1,32 @@
+{% load capex_extras %}
+<article class="panel project-detail" data-project="{{ project.id }}">
+  <header class="detail-head">
+    <h2 class="detail-title">{{ project.title }}</h2>
+    <span class="badge {{ project.status|badge_class }}">{{ project.get_status_display }}</span>
+  </header>
+  <p class="detail-meta">
+    {{ project.property.name }} · {{ project.get_category_display }} ·
+    {{ project.fiscal_period }}{% if project.submitted_by %} · submitted by {{ project.submitted_by.email }}{% endif %}
+  </p>
+  <figure class="figures">
+    <div class="fig"><span class="fig-label">Budget</span><span class="fig-value mono">{{ project.budget_amount|money }}</span></div>
+    <div class="fig"><span class="fig-label">Actuals</span><span class="fig-value mono">{{ project.actual_cost|money }}</span></div>
+    <div class="fig"><span class="fig-label">Variance</span>
+      <span class="fig-value mono {% if project|variance_over %}amt-neg{% else %}amt-pos{% endif %}">{{ project|signed_pct }}</span>
+    </div>
+  </figure>
+  {% if can_approve and project.status in "manager_review finance_review" %}
+  <footer class="detail-actions">
+    <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
+          hx-target="closest article" hx-swap="outerHTML">
+      {% csrf_token %}<input type="hidden" name="action" value="approve">
+      <button type="submit" class="btn-ok">Approve</button>
+    </form>
+    <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
+          hx-target="closest article" hx-swap="outerHTML">
+      {% csrf_token %}<input type="hidden" name="action" value="reject">
+      <button type="submit" class="btn-reject">Reject</button>
+    </form>
+  </footer>
+  {% endif %}
+</article>

@@ -1,0 +1,37 @@
+{% load capex_extras %}
+<tr data-project="{{ project.id }}">
+  <td class="cell-title">{{ project.title }}</td>
+  <td class="cell-dim">{{ project.property.name }}</td>
+  <td class="cell-dim">{{ project.get_category_display }}</td>
+  <td class="mono cell-num">{{ project.budget_amount|money }}</td>
+  <td class="mono cell-num">{{ project.actual_cost|money }}</td>
+  <td class="mono cell-num {% if project|variance_over %}amt-neg{% else %}amt-pos{% endif %}">{{ project|signed_pct }}</td>
+  <td><span class="badge {{ project.status|badge_class }}">{{ project.get_status_display }}</span></td>
+  <td class="cell-actions">
+    {% if project.status == "draft" and can_write %}
+      <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
+            hx-target="closest tr[data-project]" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="submit">
+        <button type="submit" class="btn-sm btn-neutral">Submit</button>
+      </form>
+    {% elif project.status in "manager_review finance_review" and can_approve %}
+      <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
+            hx-target="closest tr[data-project]" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="approve">
+        <button type="submit" class="btn-sm btn-ok">Approve</button>
+      </form>
+      <form method="post" hx-post="{% url 'projects-transition' project.pk %}"
+            hx-target="closest tr[data-project]" hx-swap="outerHTML">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="reject">
+        <button type="submit" class="btn-sm btn-reject">Reject</button>
+      </form>
+    {% elif project.status == "submitted" and can_approve %}
+      <span class="cell-hint">awaiting manager</span>
+    {% else %}
+      <span class="cell-hint">—</span>
+    {% endif %}
+  </td>
+</tr>

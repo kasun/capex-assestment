@@ -1,0 +1,32 @@
+{% load capex_extras %}
+<div class="panel panel-table" id="project-list">
+  <div class="panel-head">
+    <h2 class="panel-title">Projects</h2>
+    <span class="result-count">{{ page.paginator.count }} in scope · page {{ page.number }}</span>
+  </div>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Project</th><th>Property</th><th>Category</th>
+        <th class="num">Budget</th><th class="num">Actuals</th><th class="num">Variance</th>
+        <th>Status</th><th class="num">Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for project in page %}{% include "capex/partials/project_row.html" %}{% endfor %}
+    </tbody>
+  </table>
+  {% if page.paginator.num_pages > 1 %}
+    <nav class="pager" aria-label="Pagination">
+      {% if page.has_previous %}
+        <a hx-get="{% url 'projects-list' %}?page={{ page.previous_page_number }}"
+           hx-target="#project-list" hx-swap="outerHTML" href="?page={{ page.previous_page_number }}">‹ prev</a>
+      {% endif %}
+      <span>page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+      {% if page.has_next %}
+        <a hx-get="{% url 'projects-list' %}?page={{ page.next_page_number }}"
+           hx-target="#project-list" hx-swap="outerHTML" href="?page={{ page.next_page_number }}">next ›</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+</div>
